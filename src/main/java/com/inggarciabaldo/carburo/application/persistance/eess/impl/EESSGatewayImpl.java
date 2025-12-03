@@ -30,8 +30,8 @@ public class EESSGatewayImpl extends AbstractGatewayImpl<EESSRecord>
 		pst.setInt(5, record.codigoPostal);
 		pst.setInt(6, record.idMunicipio);
 		pst.setInt(7, record.idProvincia);
-		pst.setDouble(8, record.latitud);
-		pst.setDouble(9, record.longitud);
+		pst.setDouble(8, record.longitud);  // ST_MakePoint(lon, lat) 1º Long
+		pst.setDouble(9, record.latitud);  // ST_MakePoint(lon, lat)
 		pst.setString(10, record.remision);
 		pst.setDouble(11, record.x100BioEtanol);
 		pst.setDouble(12, record.x100EsterMetilico);

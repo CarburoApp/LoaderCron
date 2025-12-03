@@ -23,8 +23,8 @@ public class RecordAssembler {
 		result.codigoPostal      = rs.getInt(EESS_CODIGO_POSTAL);
 		result.idMunicipio       = rs.getShort(EESS_ID_MUNICIPIO);
 		result.idProvincia       = rs.getShort(EESS_ID_PROVINCIA);
-		result.latitud           = rs.getDouble(EESS_LATITUD);
-		result.longitud          = rs.getDouble(EESS_LONGITUD);
+		result.latitud           = rs.getDouble(EESS_LATITUD); // ahora viene de ST_Y
+		result.longitud          = rs.getDouble(EESS_LONGITUD); // ahora viene de ST_X
 		result.remision          = rs.getString(EESS_REMISION);
 		result.x100BioEtanol     = rs.getDouble(EESS_X100_BIO_ETANOL);
 		result.x100EsterMetilico = rs.getDouble(EESS_X100_ESTER_METILICO);
