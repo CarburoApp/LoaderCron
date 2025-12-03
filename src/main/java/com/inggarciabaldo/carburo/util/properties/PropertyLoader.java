@@ -5,7 +5,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Clase singleton para manejar propiedades de la aplicación.
@@ -73,11 +76,45 @@ public final class PropertyLoader {
 			try (Reader reader = new InputStreamReader(input, StandardCharsets.UTF_8)) {
 				props.load(reader);
 			}
+
+			// Solo aplicar sustitución para application.properties
+			if (fileName.equals("application.properties")) {
+				for (Map.Entry<Object, Object> entry : props.entrySet()) {
+					String key = entry.getKey().toString();
+					String value = entry.getValue().toString();
+					props.setProperty(key, resolveEnv(value));
+				}
+			}
 		} catch (IOException e) {
 			throw new IllegalStateException(
 					"No se pudo cargar el archivo de configuración: " + fileName, e);
 		}
 	}
+
+	/**
+	 * Sustituye patrones ${VAR} por variables de entorno reales.
+	 */
+	private static String resolveEnv(String value) {
+		if (value == null) return null;
+
+		Pattern pattern = Pattern.compile("\\$\\{([^}]+)\\}");
+		Matcher matcher = pattern.matcher(value);
+
+		StringBuffer sb = new StringBuffer();
+
+		while (matcher.find()) {
+			String varName = matcher.group(1);
+			String envValue = System.getenv(varName);
+
+			String replacement = envValue != null ? envValue : matcher.group(0);
+			matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+		}
+
+		matcher.appendTail(sb);
+		return sb.toString();
+	}
+
+
 
 	// ==============================
 	// Métodos para obtener objetos Properties completos

@@ -57,17 +57,11 @@ conexión a Supabase.
 
 ### Variables necesarias:
 
-| Variable               | Descripción                                     |
-|------------------------|-------------------------------------------------|
-| `DB_HOST_SUPABASE`     | Dirección del host de la base de datos Supabase |
-| `DB_PORT_SUPABASE`     | Puerto de conexión (generalmente `5432`)        |
-| `DB_USER_SUPABASE`     | Usuario con permisos de lectura y escritura     |
-| `DB_PASSWORD_SUPABASE` | Contraseña correspondiente                      |
-
-Estas variables son utilizadas por la propiedad:
-
-spring.datasource.url=jdbc:postgresql://${DB_HOST_SUPABASE}:$
-{DB_PORT_SUPABASE}/postgres?user=${DB_USER_SUPABASE}&password=${DB_PASSWORD_SUPABASE}
+| Variable  | Descripción                                 |
+|-----------|---------------------------------------------|
+| `DB_URL`  | Dirección del host de la base de datos      |
+| `DB_USER` | Usuario con permisos de lectura y escritura |
+| `DB_PASS` | Contraseña correspondiente                  |
 
 
 > ⚠️ **Importante:**  
