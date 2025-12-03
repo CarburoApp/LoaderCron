@@ -3,34 +3,22 @@ package com.inggarciabaldo.carburo.application.model;
 import lombok.Getter;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
-import java.util.List;
 import java.util.Objects;
 
 @Getter
-// TODO
 public class CA implements Serializable {
 
 	// ==============================
 	// CAMPOS
 	// ==============================
-
-	private Short id;
-
+	private short id;
 	private String denominacion;
-
-	private BigDecimal extCode;
-
-	private List<Provincia> provincias;
-
-	// ==============================
-	// CONSTRUCTORES
-	// ==============================
+	private short extCode;
 
 	/**
 	 * Constructor lógico
 	 */
-	public CA(Short id, String denominacion, BigDecimal extCode) {
+	public CA(short id, String denominacion, short extCode) {
 		setId(id);
 		setDenominacion(denominacion);
 		setExtCode(extCode);
@@ -40,8 +28,8 @@ public class CA implements Serializable {
 	// SETTERS CON VALIDACIÓN
 	// ==============================
 
-	public void setId(Short id) {
-		if (id == null || id <= 0) throw new IllegalArgumentException(
+	public void setId(short id) {
+		if (id <= 0) throw new IllegalArgumentException(
 				"El ID de la CCAA debe ser un número positivo.");
 		this.id = id;
 	}
@@ -55,14 +43,8 @@ public class CA implements Serializable {
 		this.denominacion = denominacion.trim();
 	}
 
-	public void setExtCode(BigDecimal extCode) {
-		if (extCode == null)
-			throw new IllegalArgumentException("El código externo no puede ser nulo.");
-		if (extCode.scale() != 0) // verifica que sea un entero
-			throw new IllegalArgumentException(
-					"El código externo debe ser un número entero.");
-		if (extCode.compareTo(BigDecimal.ZERO) < 0 ||
-				extCode.compareTo(BigDecimal.valueOf(99)) > 0)
+	public void setExtCode(short extCode) {
+		if (extCode <= 0 || extCode > 99)  // verifica que esté entre 0 y 99
 			throw new IllegalArgumentException(
 					"El código externo debe estar entre 0 y 99.");
 
@@ -74,21 +56,27 @@ public class CA implements Serializable {
 	// MÉTODOS COMUNES
 	// ==============================
 
+
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (!(o instanceof CA CA)) return false;
-		return Objects.equals(id, CA.id);
+		if (o == null || getClass() != o.getClass()) return false;
+		CA ca = (CA) o;
+		return id == ca.id && extCode == ca.extCode &&
+				Objects.equals(denominacion, ca.denominacion);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(id);
+		return Objects.hash(id, denominacion, extCode);
 	}
 
 	@Override
 	public String toString() {
-		return "CCAA{" + "id=" + id + ", denominacion='" + denominacion + '\'' +
-				", extCode=" + extCode + '}';
+		final StringBuffer sb = new StringBuffer("CA{");
+		sb.append("id=").append(id);
+		sb.append(", denominacion='").append(denominacion).append('\'');
+		sb.append(", extCode=").append(extCode);
+		sb.append('}');
+		return sb.toString();
 	}
 }
