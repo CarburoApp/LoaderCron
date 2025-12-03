@@ -1,12 +1,39 @@
 # 🕒 Cron de Actualización Automática de Datos de Hidrocarburos (TFG)
 
+## 📊 Calidad del Código (SonarCloud)
+
+**Estado General**
+
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=CarburoApp_LoaderCron&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=CarburoApp_LoaderCron)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=CarburoApp_LoaderCron&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=CarburoApp_LoaderCron)
+
+**Bugs y Vulnerabilidades**
+
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=CarburoApp_LoaderCron&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=CarburoApp_LoaderCron)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=CarburoApp_LoaderCron&metric=bugs)](https://sonarcloud.io/summary/new_code?id=CarburoApp_LoaderCron)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=CarburoApp_LoaderCron&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=CarburoApp_LoaderCron)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=CarburoApp_LoaderCron&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=CarburoApp_LoaderCron)
+
+**Cobertura y Mantenibilidad**
+
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=CarburoApp_LoaderCron&metric=coverage)](https://sonarcloud.io/summary/new_code?id=CarburoApp_LoaderCron)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=CarburoApp_LoaderCron&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=CarburoApp_LoaderCron)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=CarburoApp_LoaderCron&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=CarburoApp_LoaderCron)
+
+---
+
 ## 📘 Introducción
 
-Este repositorio forma parte del **Trabajo de Fin de Grado (TFG)** de **Manuel García Baldo** en la **Universidad de Oviedo**.  
-Su objetivo es **mantener actualizados los datos de estaciones de servicio y precios de combustibles en España**, obtenidos desde la **API de Hidrocarburos del MITMA**, para que estén disponibles y actualizados en la **aplicación Android principal del proyecto**.
+Este repositorio forma parte del **Trabajo de Fin de Grado (TFG)** de **Manuel García Baldo** en la **Universidad de
+Oviedo**.  
+Su objetivo es **mantener actualizados los datos de estaciones de servicio y precios de combustibles en España**,
+obtenidos desde la **API de Hidrocarburos del MITMA**, para que estén disponibles y actualizados en la **aplicación
+Android principal del proyecto**.
 
-Este módulo se ejecuta como un **cron programado cada 30 minutos**, que descarga, procesa y sincroniza la información con una **base de datos Supabase** (PostgreSQL).  
-De esta forma, la aplicación Android puede consultar los datos más recientes sin depender directamente de la API externa, mejorando la **disponibilidad, velocidad y fiabilidad**.
+Este módulo se ejecuta como un **cron programado cada 30 minutos**, que descarga, procesa y sincroniza la información
+con una **base de datos Supabase** (PostgreSQL).  
+De esta forma, la aplicación Android puede consultar los datos más recientes sin depender directamente de la API
+externa, mejorando la **disponibilidad, velocidad y fiabilidad**.
 
 ---
 
@@ -17,50 +44,63 @@ El proyecto incluye:
 - **Sistema de cron**: Planificador automático que ejecuta las actualizaciones cada 30 minutos como un job.
 - **Módulo HTTP**: Gestiona las peticiones y la recepción de datos JSON.
 - **Parsers JSON**: Transforman los datos obtenidos desde la API MITMA en entidades Java.
-- **Gestión concurrente**: Procesamiento en paralelo de grandes volúmenes de datos para reducir el tiempo de actualización.
+- **Gestión concurrente**: Procesamiento en paralelo de grandes volúmenes de datos para reducir el tiempo de
+  actualización.
 - **Persistencia**: Sincronización eficiente con la base de datos Supabase usando operaciones por lotes.
 
 ---
 
 ## 🔧 Configuración inicial
 
-Antes de ejecutar el cron, **es imprescindible configurar correctamente las variables de entorno** relacionadas con la conexión a Supabase.
+Antes de ejecutar el cron, **es imprescindible configurar correctamente las variables de entorno** relacionadas con la
+conexión a Supabase.
 
 ### Variables necesarias:
 
-| Variable | Descripción |
-|-----------|-------------|
-| `DB_HOST_SUPABASE` | Dirección del host de la base de datos Supabase |
-| `DB_PORT_SUPABASE` | Puerto de conexión (generalmente `5432`) |
-| `DB_USER_SUPABASE` | Usuario con permisos de lectura y escritura |
-| `DB_PASSWORD_SUPABASE` | Contraseña correspondiente |
+| Variable               | Descripción                                     |
+|------------------------|-------------------------------------------------|
+| `DB_HOST_SUPABASE`     | Dirección del host de la base de datos Supabase |
+| `DB_PORT_SUPABASE`     | Puerto de conexión (generalmente `5432`)        |
+| `DB_USER_SUPABASE`     | Usuario con permisos de lectura y escritura     |
+| `DB_PASSWORD_SUPABASE` | Contraseña correspondiente                      |
 
 Estas variables son utilizadas por la propiedad:
 
-spring.datasource.url=jdbc:postgresql://${DB_HOST_SUPABASE}:${DB_PORT_SUPABASE}/postgres?user=${DB_USER_SUPABASE}&password=${DB_PASSWORD_SUPABASE}
+spring.datasource.url=jdbc:postgresql://${DB_HOST_SUPABASE}:$
+{DB_PORT_SUPABASE}/postgres?user=${DB_USER_SUPABASE}&password=${DB_PASSWORD_SUPABASE}
 
 
 > ⚠️ **Importante:**  
-> Si estas variables no se definen correctamente, el cron **no podrá establecer conexión con la base de datos** y **no se iniciará el proceso de actualización**.
+> Si estas variables no se definen correctamente, el cron **no podrá establecer conexión con la base de datos** y **no
+se iniciará el proceso de actualización**.
 
 ---
 
 ## 🔄 Funcionamiento general
 
 ### ⏱️ Ejecución programada
-El cron se activa automáticamente **cada 30 minutos** mediante un planificador interno basado en `ScheduledExecutorService`. La programación es configurable desde las properties del proyecto.
+
+El cron se activa automáticamente **cada 30 minutos** mediante un planificador interno basado en
+`ScheduledExecutorService`. La programación es configurable desde las properties del proyecto.
 
 ### 🌐 Obtención de datos
-Realiza **peticiones HTTP** a la **API de Hidrocarburos del MITMA**, obteniendo un JSON con la información de todas las estaciones de servicio y precios actualizados.
+
+Realiza **peticiones HTTP** a la **API de Hidrocarburos del MITMA**, obteniendo un JSON con la información de todas las
+estaciones de servicio y precios actualizados.
 
 ### 🧩 Procesamiento y parseo
+
 Los datos recibidos se transforman en entidades (`EESS`, `Municipio`, `Provincia`, etc.) mediante parsers dedicados.
 
 ### 💾 Persistencia eficiente
-Las entidades se sincronizan con la base de datos Supabase usando **operaciones por lotes (batch)** y **procesamiento concurrente con hilos** para optimizar el rendimiento.
+
+Las entidades se sincronizan con la base de datos Supabase usando **operaciones por lotes (batch)** y **procesamiento
+concurrente con hilos** para optimizar el rendimiento.
 
 ### 📋 Registro de actividad
+
 Cada ejecución genera logs detallados con:
+
 - Número de estaciones procesadas.
 - Errores detectados.
 - Tiempo total de ejecución.
@@ -71,7 +111,8 @@ Cada ejecución genera logs detallados con:
 
 ### 🧵 Gestión de hilos y concurrencia
 
-Uno de los mayores retos fue la **gestión eficiente del gran volumen de datos** (más de 10.000 estaciones por actualización).  
+Uno de los mayores retos fue la **gestión eficiente del gran volumen de datos** (más de 10.000 estaciones por
+actualización).  
 Procesar y almacenar esta cantidad en un tiempo razonable requería:
 
 - Uso de `ExecutorService` y `CompletableFuture` para ejecución multihilo.
@@ -89,16 +130,20 @@ El código actual implementa una solución robusta que equilibra concurrencia, r
 Durante el desarrollo se detectó un problema crítico con la **resolución de direcciones IP**:
 
 - El entorno local del cron usaba **IPv4**.
-- Supabase, en su infraestructura actual, **solo acepta tráfico entrante por IPv6** en su versión Online, con la que se empezó a trabajar.
+- Supabase, en su infraestructura actual, **solo acepta tráfico entrante por IPv6** en su versión Online, con la que se
+  empezó a trabajar.
 
 Esto generaba errores de conexión del tipo `Connection refused` o `timeout`, incluso con credenciales correctas.  
-La causa estaba en la resolución DNS: el dominio de Supabase devolvía registros **AAAA (IPv6)**, mientras el entorno local intentaba conectarse por IPv4.
+La causa estaba en la resolución DNS: el dominio de Supabase devolvía registros **AAAA (IPv6)**, mientras el entorno
+local intentaba conectarse por IPv4.
 
 #### ✅ Solución adoptada:
-- Ejecutar el cron en entornos con **soporte IPv4 nativo**. Con la BD Supabase en un modo especial para poder aceptar conexiones IPV4.
+
+- Ejecutar el cron en entornos con **soporte IPv4 nativo**. Con la BD Supabase en un modo especial para poder aceptar
+  conexiones IPV4.
 - En entornos sin IPv6, usar **contenedores o máquinas dual-stack (IPv4/IPv6)** para permitir la conexión.
 
- *En el sistema final la BD será local, en un servior porpio por lo que no habrá este problema.
+*En el sistema final la BD será local, en un servior porpio por lo que no habrá este problema.
 
 ---
 
@@ -112,7 +157,8 @@ La app permite a los usuarios:
 - Ver **horarios, direcciones y coordenadas**.
 - Aplicar **filtros por tipo de combustible o ubicación**.
 
-El cron garantiza que estos datos estén siempre actualizados en Supabase, sin depender directamente de la API MITMA (más lenta y menos estable para uso en producción).
+El cron garantiza que estos datos estén siempre actualizados en Supabase, sin depender directamente de la API MITMA (más
+lenta y menos estable para uso en producción).
 
 ---
 
