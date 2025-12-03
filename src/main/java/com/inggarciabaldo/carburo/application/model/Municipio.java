@@ -3,23 +3,22 @@ package com.inggarciabaldo.carburo.application.model;
 import lombok.Getter;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.Objects;
 
 @Getter
-// TODO
 public class Municipio implements Serializable {
 
-	private Short id;
+	private short id;
 	private String denominacion;
-	private BigDecimal extCode;
+	private short extCode;
 	private Provincia provincia;
 
 	// ======================
 	// Constructores
 	// ======================
 
-	public Municipio(String denominacion, BigDecimal extCode, Provincia provincia) {
+	public Municipio(short id, String denominacion, short extCode, Provincia provincia) {
+		setID(id);
 		setDenominacion(denominacion);
 		setExtCode(extCode);
 		setProvincia(provincia);
@@ -29,8 +28,8 @@ public class Municipio implements Serializable {
 	// Setters con validación
 	// ======================
 
-	public void setId(Short id) {
-		if (id != null && id < 0) throw new IllegalArgumentException(
+	public void setID(short id) {
+		if (id < 0) throw new IllegalArgumentException(
 				"El ID de municipio no puede ser negativo");
 		this.id = id;
 	}
@@ -44,16 +43,13 @@ public class Municipio implements Serializable {
 		this.denominacion = denominacion.trim();
 	}
 
-	public void setExtCode(BigDecimal extCode) {
-		if (extCode != null && (extCode.compareTo(BigDecimal.ZERO) < 0 ||
-										extCode.compareTo(BigDecimal.valueOf(9999)) >
-												0)) {
+	public void setExtCode(short extCode) {
+		if (extCode < 0 || extCode > 9999) {
 			throw new IllegalArgumentException(
 					"El código externo del municipio debe tener entre 0 y 9999");
 		}
 		this.extCode = extCode;
 	}
-
 
 	public void setProvincia(Provincia provincia) {
 		if (provincia == null) throw new IllegalArgumentException(
@@ -83,8 +79,12 @@ public class Municipio implements Serializable {
 
 	@Override
 	public String toString() {
-		return "Municipio{" + "id=" + id + ", denominacion='" + denominacion + '\'' +
-				", extCode=" + extCode + ", provincia=" +
-				(provincia != null ? provincia.getId() : "null") + '}';
+		final StringBuffer sb = new StringBuffer("Municipio{");
+		sb.append("id=").append(id);
+		sb.append(", denominacion='").append(denominacion).append('\'');
+		sb.append(", extCode=").append(extCode);
+		sb.append(", provincia=").append(provincia.getDenominacion());
+		sb.append('}');
+		return sb.toString();
 	}
 }

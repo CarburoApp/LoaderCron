@@ -7,25 +7,22 @@ import lombok.Getter;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 @Getter
-// TODO
 public class ES implements Serializable {
 
 	// ==============================
 	// CAMPOS
 	// ==============================
-
-	private Integer id;
-	private BigDecimal extCode;
+	private int id;
+	private int extCode;
 	private String rotulo;
 	private String horario;
 	private String direccion;
 	private String localidad;
-	private BigDecimal codigoPostal;
+	private int codigoPostal;
 
 	private Municipio municipio;
 	private Provincia provincia;
@@ -36,20 +33,20 @@ public class ES implements Serializable {
 	private Venta venta;
 	private BigDecimal x100BioEtanol;
 	private BigDecimal x100EsterMetilico;
-	private final Set<Combustible> combustiblesDisponibles = new HashSet<>();
+	private final List<Combustible> combustiblesDisponibles;
 
-
-	/**
-	 * Constructor principal para inicialización lógica.
-	 */
-	public ES(BigDecimal extCode, String rotulo, String horario, String direccion,
-			  BigDecimal codigoPostal, String localidad, BigDecimal latitud,
-			  BigDecimal longitud, Margen margen, Remision remision, Venta venta,
-			  Municipio municipio, Provincia provincia) {
+	public ES(List<Combustible> combustiblesDisponibles, BigDecimal x100EsterMetilico,
+			  BigDecimal x100BioEtanol, Venta venta, Remision remision, Margen margen,
+			  BigDecimal longitud, BigDecimal latitud, Provincia provincia,
+			  Municipio municipio, int codigoPostal, String localidad, String direccion,
+			  String horario, String rotulo, short extCode, int id) {
+		setId(id);
 		setExtCode(extCode);
 		setRotulo(rotulo);
 		setHorario(horario);
 		setDireccion(direccion);
+		setProvincia(provincia);
+		setMunicipio(municipio);
 		setLocalidad(localidad);
 		setCodigoPostal(codigoPostal);
 		setLatitud(latitud);
@@ -57,6 +54,12 @@ public class ES implements Serializable {
 		setMargen(margen);
 		setRemision(remision);
 		setVenta(venta);
+		this.combustiblesDisponibles = combustiblesDisponibles;
+		this.x100EsterMetilico       = x100EsterMetilico;
+		this.x100BioEtanol           = x100BioEtanol;
+		this.provincia               = provincia;
+		this.municipio               = municipio;
+		this.id                      = id;
 	}
 
 
@@ -64,9 +67,14 @@ public class ES implements Serializable {
 	// SETTERS CON VALIDACIÓN
 	// ==============================
 
-	public void setExtCode(BigDecimal extCode) {
-		if (extCode == null || extCode.compareTo(BigDecimal.ZERO) < 0 ||
-				extCode.stripTrailingZeros().scale() > 0) {
+	public void setId(int id) {
+		if (id < 0) throw new IllegalArgumentException(
+				"El id debe ser un número entero positivo.");
+		this.id = id;
+	}
+
+	public void setExtCode(int extCode) {
+		if (extCode < 0) {
 			throw new IllegalArgumentException(
 					"extCode debe ser un número entero positivo o nulo.");
 		}
@@ -105,10 +113,18 @@ public class ES implements Serializable {
 		this.localidad = localidad;
 	}
 
-	public void setCodigoPostal(BigDecimal codigoPostal) {
-		if (codigoPostal != null &&
-				(codigoPostal.compareTo(BigDecimal.valueOf(1000)) < 0 ||
-						 codigoPostal.compareTo(BigDecimal.valueOf(52999)) > 0)) {
+	public void setMunicipio(Municipio municipio) {
+		if (municipio != null) this.municipio = municipio;
+		throw new IllegalArgumentException("El Municipio no puede ser nulo.");
+	}
+
+	public void setProvincia(Provincia provincia) {
+		if (provincia != null) this.provincia = provincia;
+		throw new IllegalArgumentException("La provincia no puede ser nula.");
+	}
+
+	public void setCodigoPostal(int codigoPostal) {
+		if (codigoPostal < 1 || codigoPostal > 52999) {
 			throw new IllegalArgumentException("Código postal no válido para España.");
 		}
 		this.codigoPostal = codigoPostal;
@@ -206,8 +222,24 @@ public class ES implements Serializable {
 
 	@Override
 	public String toString() {
-		return "EESS{" + "id=" + id + ", rotulo='" + rotulo + '\'' + ", localidad='" +
-				localidad + '\'' + ", codigoPostal=" + codigoPostal + ", provincia=" +
-				(provincia != null ? provincia.getDenominacion() : null) + '}';
+		final StringBuffer sb = new StringBuffer("ES{");
+		sb.append("id=").append(id);
+		sb.append(", extCode=").append(extCode);
+		sb.append(", rotulo='").append(rotulo).append('\'');
+		sb.append(", horario='").append(horario).append('\'');
+		sb.append(", direccion='").append(direccion).append('\'');
+		sb.append(", localidad='").append(localidad).append('\'');
+		sb.append(", codigoPostal=").append(codigoPostal);
+		sb.append(", municipio=").append(municipio.getDenominacion());
+		sb.append(", provincia=").append(provincia.getDenominacion());
+		sb.append(", latitud=").append(latitud);
+		sb.append(", longitud=").append(longitud);
+		sb.append(", margen=").append(margen);
+		sb.append(", remision=").append(remision);
+		sb.append(", venta=").append(venta);
+		sb.append(", x100BioEtanol=").append(x100BioEtanol);
+		sb.append(", x100EsterMetilico=").append(x100EsterMetilico);
+		sb.append('}');
+		return sb.toString();
 	}
 }

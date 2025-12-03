@@ -3,23 +3,18 @@ package com.inggarciabaldo.carburo.application.model;
 import lombok.Getter;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
-import java.util.List;
 import java.util.Objects;
 
 @Getter
-// TODO
 public class Provincia implements Serializable {
 
 	// ==============================
 	// CAMPOS
 	// ==============================
-
-	private Short id;
+	private short id;
 	private String denominacion;
-	private BigDecimal extCode;
+	private short extCode;
 	private CA CA;
-	private List<Municipio> municipios;
 
 	// ==============================
 	// CONSTRUCTORES
@@ -28,7 +23,7 @@ public class Provincia implements Serializable {
 	/**
 	 * Constructor lógico
 	 */
-	public Provincia(short id, String denominacion, BigDecimal extCode, CA CA) {
+	public Provincia(short id, String denominacion, short extCode, CA CA) {
 		setId(id);
 		setDenominacion(denominacion);
 		setExtCode(extCode);
@@ -54,16 +49,11 @@ public class Provincia implements Serializable {
 		this.denominacion = denominacion.trim();
 	}
 
-	public void setExtCode(BigDecimal extCode) {
-		if (extCode == null)
-			throw new IllegalArgumentException("El código externo no puede ser nulo.");
-
-		if (extCode.compareTo(BigDecimal.ZERO) < 0 ||
-				extCode.compareTo(new BigDecimal("99")) > 0)
+	public void setExtCode(short extCode) {
+		if (extCode <= 0 || extCode > 99)
 			throw new IllegalArgumentException(
-					"El código externo debe ser un número entero positivo de hasta 2 dígitos: " +
+					"El código externo debe ser un número entero positivo de hasta 2 dígitos (0-99): " +
 							extCode);
-
 		this.extCode = extCode;
 	}
 
@@ -78,22 +68,29 @@ public class Provincia implements Serializable {
 	// MÉTODOS COMUNES
 	// ==============================
 
+
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (!(o instanceof Provincia that)) return false;
-		return Objects.equals(id, that.id);
+		if (o == null || getClass() != o.getClass()) return false;
+		Provincia provincia = (Provincia) o;
+		return id == provincia.id && extCode == provincia.extCode &&
+				Objects.equals(denominacion, provincia.denominacion) &&
+				Objects.equals(CA, provincia.CA);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(id);
+		return Objects.hash(id, denominacion, extCode, CA);
 	}
 
 	@Override
 	public String toString() {
-		return "Provincia{" + "id=" + id + ", denominacion='" + denominacion + '\'' +
-				", extCode=" + extCode + ", ccaa=" +
-				(CA != null ? CA.getDenominacion() : null) + '}';
+		final StringBuffer sb = new StringBuffer("Provincia{");
+		sb.append("id=").append(id);
+		sb.append(", denominacion='").append(denominacion).append('\'');
+		sb.append(", extCode=").append(extCode);
+		sb.append(", CA=").append(CA);
+		sb.append('}');
+		return sb.toString();
 	}
 }

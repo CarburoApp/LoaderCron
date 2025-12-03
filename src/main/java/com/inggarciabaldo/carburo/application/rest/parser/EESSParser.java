@@ -1,6 +1,9 @@
 package com.inggarciabaldo.carburo.application.rest.parser;
 
-import com.inggarciabaldo.carburo.application.model.*;
+import com.inggarciabaldo.carburo.application.model.Combustible;
+import com.inggarciabaldo.carburo.application.model.ES;
+import com.inggarciabaldo.carburo.application.model.Municipio;
+import com.inggarciabaldo.carburo.application.model.Provincia;
 import com.inggarciabaldo.carburo.application.model.enums.Margen;
 import com.inggarciabaldo.carburo.application.model.enums.Remision;
 import com.inggarciabaldo.carburo.application.model.enums.Venta;
@@ -111,14 +114,14 @@ public class EESSParser {
 		if (eessExistentes.contains(extCode)) return null;
 		else {
 			// Crear nueva EESS si no existe
-			ES ES = new ES(extCode, parseRotulo(item), parseHorario(item),
-						   parseDireccion(item), parseCodigoPostal(item),
-						   parseLocalidad(item), parseLatitud(item), parseLongitud(item),
-						   parseMargen(item), parseRemision(item), parseVenta(item),
-						   municipio, provincia);
-			ES.setX100BioEtanol(parseBioEtanol(item));
-			ES.setX100EsterMetilico(parseEsterMetilico(item));
-			return ES;
+			//			ES ES = new ES(extCode, parseRotulo(item), parseHorario(item),
+			//						   parseDireccion(item), parseCodigoPostal(item),
+			//						   parseLocalidad(item), parseLatitud(item), parseLongitud(item),
+			//						   parseMargen(item), parseRemision(item), parseVenta(item),
+			//						   municipio, provincia);
+			//			ES.setX100BioEtanol(parseBioEtanol(item));
+			//			ES.setX100EsterMetilico(parseEsterMetilico(item));
+			return null;//ES;
 		}
 		// 3. Parseamos precios de combustibles
 		//parsePrecios(item, eess, fecha, combustible);
