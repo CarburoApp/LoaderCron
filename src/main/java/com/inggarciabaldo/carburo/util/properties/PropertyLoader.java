@@ -100,7 +100,7 @@ public final class PropertyLoader {
 		Pattern pattern = Pattern.compile("\\$\\{([^}]+)\\}");
 		Matcher matcher = pattern.matcher(value);
 
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 
 		while (matcher.find()) {
 			String varName = matcher.group(1);
@@ -113,7 +113,6 @@ public final class PropertyLoader {
 		matcher.appendTail(sb);
 		return sb.toString();
 	}
-
 
 
 	// ==============================

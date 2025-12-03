@@ -133,29 +133,29 @@ public class EESSParser {
 	 * Si combustible != null, solo se parsea ese combustible usando la clave PRECIO_PREFIX.
 	 *
 	 * @param item        JSONObject de la estación
-	 * @param ES          EESS asociada
+	 * @param es          EESS asociada
 	 * @param fecha       Fecha de los precios
 	 * @param combustible Combustible específico a parsear (opcional). Null = todos.
 	 */
-	private void parsePrecios(JSONObject item, ES ES, LocalDate fecha,
+	private void parsePrecios(JSONObject item, ES es, LocalDate fecha,
 							  Combustible combustible) {
 		if (combustible == null) {
-			parsePreciosTodosCombustibles(item, ES, fecha);
+			parsePreciosTodosCombustibles(item, es, fecha);
 		} else {
-			parsePrecioCombustible(item, ES, fecha, combustible);
+			parsePrecioCombustible(item, es, fecha, combustible);
 		}
 	}
 
 	/**
 	 * Itera todos los combustibles y parsea sus precios.
 	 */
-	private void parsePreciosTodosCombustibles(JSONObject item, ES ES, LocalDate fecha) {
+	private void parsePreciosTodosCombustibles(JSONObject item, ES es, LocalDate fecha) {
 		List<Combustible> combustibles = null;//= repoCombustible.findAll();
 		for (Combustible c : combustibles) {
 			BigDecimal precio = parsearPrecio(item, obtenerClaveCombustibleJson(c), c);
 			if (precio != null) {
-				persistirPrecio(ES, c, fecha, precio);
-				actualizarDisponibilidadCombustible(ES, c);
+				persistirPrecio(es, c, fecha, precio);
+				actualizarDisponibilidadCombustible(es, c);
 			}
 		}
 	}
@@ -163,12 +163,12 @@ public class EESSParser {
 	/**
 	 * Parsea solo un combustible concreto usando la clave PRECIO_PREFIX.
 	 */
-	private void parsePrecioCombustible(JSONObject item, ES ES, LocalDate fecha,
+	private void parsePrecioCombustible(JSONObject item, ES es, LocalDate fecha,
 										Combustible c) {
 		BigDecimal precio = parsearPrecio(item, PRECIO_PREFIX, c);
 		if (precio != null) {
-			persistirPrecio(ES, c, fecha, precio);
-			actualizarDisponibilidadCombustible(ES, c);
+			persistirPrecio(es, c, fecha, precio);
+			actualizarDisponibilidadCombustible(es, c);
 		}
 	}
 
@@ -199,36 +199,36 @@ public class EESSParser {
 	/**
 	 * Persiste o actualiza un precio en la base de datos.
 	 */
-	private void persistirPrecio(ES ES, Combustible combustible, LocalDate fecha,
+	private void persistirPrecio(ES es, Combustible combustible, LocalDate fecha,
 								 BigDecimal precio) {
-//		PrecioCombustible existente = repoPrecioCombustible.findByEESSAndCombustibleAndFecha(
-//				ES, combustible, fecha);
-//
-//		if (existente != null) {
-//			if (existente.getPrecio().compareTo(precio) != 0) {
-//				existente.setPrecio(precio);
-//				repoPrecioCombustible.update(existente);
-//			}
-//		} else {
-//			// Aseguramos que las entidades relacionadas están gestionadas
-//			EntityManager em = JPAUtil.getEntityManager();
-//			ES managedES = em.getReference(ES.class, ES.getId());
-//			Combustible managedCombustible = em.getReference(Combustible.class,
-//															 combustible.getId());
-//
-//			PrecioCombustible nuevo = new PrecioCombustible(managedES, managedCombustible,
-//															fecha, precio);
-//			repoPrecioCombustible.save(nuevo); // persist ahora es seguro
-//		}
+		//		PrecioCombustible existente = repoPrecioCombustible.findByEESSAndCombustibleAndFecha(
+		//				ES, combustible, fecha);
+		//
+		//		if (existente != null) {
+		//			if (existente.getPrecio().compareTo(precio) != 0) {
+		//				existente.setPrecio(precio);
+		//				repoPrecioCombustible.update(existente);
+		//			}
+		//		} else {
+		//			// Aseguramos que las entidades relacionadas están gestionadas
+		//			EntityManager em = JPAUtil.getEntityManager();
+		//			ES managedES = em.getReference(ES.class, ES.getId());
+		//			Combustible managedCombustible = em.getReference(Combustible.class,
+		//															 combustible.getId());
+		//
+		//			PrecioCombustible nuevo = new PrecioCombustible(managedES, managedCombustible,
+		//															fecha, precio);
+		//			repoPrecioCombustible.save(nuevo); // persist ahora es seguro
+		//		}
 	}
 
 
 	/**
 	 * Actualiza la lista de combustibles disponibles de la EESS.
 	 */
-	private void actualizarDisponibilidadCombustible(ES ES, Combustible combustible) {
-		if (!ES.getCombustiblesDisponibles().contains(combustible)) {
-			ES.getCombustiblesDisponibles().add(combustible);
+	private void actualizarDisponibilidadCombustible(ES es, Combustible combustible) {
+		if (!es.getCombustiblesDisponibles().contains(combustible)) {
+			es.getCombustiblesDisponibles().add(combustible);
 			//repoEESS.update(ES);
 		}
 	}
@@ -344,6 +344,7 @@ public class EESSParser {
 		try {
 			return new BigDecimal(item.optString(BIOETANOL).replace(",", "."));
 		} catch (Exception e) {
+			e.printStackTrace();
 			return BigDecimal.ZERO;
 		}
 	}
@@ -352,6 +353,7 @@ public class EESSParser {
 		try {
 			return new BigDecimal(item.optString(ESTER_METILICO).replace(",", "."));
 		} catch (Exception e) {
+			e.printStackTrace();
 			return BigDecimal.ZERO;
 		}
 	}

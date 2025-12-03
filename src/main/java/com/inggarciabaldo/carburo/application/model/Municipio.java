@@ -79,7 +79,7 @@ public class Municipio implements Serializable {
 
 	@Override
 	public String toString() {
-		final StringBuffer sb = new StringBuffer("Municipio{");
+		final StringBuilder sb = new StringBuilder("Municipio{");
 		sb.append("id=").append(id);
 		sb.append(", denominacion='").append(denominacion).append('\'');
 		sb.append(", extCode=").append(extCode);

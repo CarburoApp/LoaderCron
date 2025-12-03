@@ -10,6 +10,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
+import static java.sql.PreparedStatement.RETURN_GENERATED_KEYS;
+
 /**
  * Implementación base (abstracta) del patrón Gateway.
  * Proporciona la lógica común para CRUD mediante JDBC,
@@ -134,8 +136,7 @@ public abstract class AbstractGatewayImpl<T> implements Gateway<T> {
 			String sql = getQuery(ADD_KEY);
 
 			// Preparar statement indicando que queremos la clave generada
-			try (PreparedStatement pst = c.prepareStatement(sql,
-															PreparedStatement.RETURN_GENERATED_KEYS)) {
+			try (PreparedStatement pst = c.prepareStatement(sql, RETURN_GENERATED_KEYS)) {
 				// La subclase solo asigna parámetros
 				doInsertPreparedStatement(t, pst);
 				pst.executeUpdate();

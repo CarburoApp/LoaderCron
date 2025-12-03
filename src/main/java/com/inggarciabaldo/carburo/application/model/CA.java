@@ -72,7 +72,7 @@ public class CA implements Serializable {
 
 	@Override
 	public String toString() {
-		final StringBuffer sb = new StringBuffer("CA{");
+		final StringBuilder sb = new StringBuilder("CA{");
 		sb.append("id=").append(id);
 		sb.append(", denominacion='").append(denominacion).append('\'');
 		sb.append(", extCode=").append(extCode);

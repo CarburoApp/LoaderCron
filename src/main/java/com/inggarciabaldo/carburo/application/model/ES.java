@@ -211,8 +211,8 @@ public class ES implements Serializable {
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-		if (!(o instanceof ES ES)) return false;
-		return Objects.equals(id, ES.id);
+		if (!(o instanceof ES es)) return false;
+		return Objects.equals(id, es.id);
 	}
 
 	@Override
@@ -222,7 +222,7 @@ public class ES implements Serializable {
 
 	@Override
 	public String toString() {
-		final StringBuffer sb = new StringBuffer("ES{");
+		final StringBuilder sb = new StringBuilder("ES{");
 		sb.append("id=").append(id);
 		sb.append(", extCode=").append(extCode);
 		sb.append(", rotulo='").append(rotulo).append('\'');
