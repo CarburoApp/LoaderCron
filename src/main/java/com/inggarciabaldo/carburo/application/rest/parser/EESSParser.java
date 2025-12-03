@@ -344,7 +344,7 @@ public class EESSParser {
 		try {
 			return new BigDecimal(item.optString(BIOETANOL).replace(",", "."));
 		} catch (Exception e) {
-			e.printStackTrace();
+			parseLog.error(e.getMessage(), e);
 			return BigDecimal.ZERO;
 		}
 	}
@@ -353,7 +353,7 @@ public class EESSParser {
 		try {
 			return new BigDecimal(item.optString(ESTER_METILICO).replace(",", "."));
 		} catch (Exception e) {
-			e.printStackTrace();
+			parseLog.error(e.getMessage(), e);
 			return BigDecimal.ZERO;
 		}
 	}
