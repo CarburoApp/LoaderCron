@@ -98,7 +98,8 @@ La causa estaba en la resolución DNS: el dominio de Supabase devolvía registro
 - Ejecutar el cron en entornos con **soporte IPv4 nativo**. Con la BD Supabase en un modo especial para poder aceptar conexiones IPV4.
 - En entornos sin IPv6, usar **contenedores o máquinas dual-stack (IPv4/IPv6)** para permitir la conexión.
 
-*En el sistema final la BD será local, en un servior porpio por lo que no habrá este problema.
+ *En el sistema final la BD será local, en un servior porpio por lo que no habrá este problema.
+
 ---
 
 ## 📱 Relación con la aplicación Android del TFG
