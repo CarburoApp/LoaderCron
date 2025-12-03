@@ -10,7 +10,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.inggarciabaldo.carburo.application.persistance.DBColumns.CCAA_TABLE;
+import static com.inggarciabaldo.carburo.config.persistencia.DBColumns.CCAA_TABLE;
 
 public class CCAAGatewayImpl extends AbstractGatewayImpl<CCAARecord>
 		implements CCAAGateway {

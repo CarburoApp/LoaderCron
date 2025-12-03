@@ -1,4 +1,4 @@
-package com.inggarciabaldo.carburo.parser.dto.EETT;
+package com.inggarciabaldo.carburo.application.rest.dto;
 
 import com.google.gson.annotations.SerializedName;
 import lombok.*;

@@ -9,7 +9,7 @@ import java.sql.*;
 import java.util.List;
 import java.util.Optional;
 
-import static com.inggarciabaldo.carburo.application.persistance.DBColumns.PRECIOCOMBUSTIBLE_TABLE;
+import static com.inggarciabaldo.carburo.config.persistencia.DBColumns.PRECIOCOMBUSTIBLE_TABLE;
 
 public class PrecioCombustibleGatewayImpl implements PrecioCombustibleGateway {
 

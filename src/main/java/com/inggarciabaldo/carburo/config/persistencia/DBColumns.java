@@ -1,4 +1,4 @@
-package com.inggarciabaldo.carburo.application.persistance;
+package com.inggarciabaldo.carburo.config.persistencia;
 
 /**
  * Constantes con los nombres de columnas de la base de datos.

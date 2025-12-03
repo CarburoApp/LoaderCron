@@ -2,37 +2,19 @@ package com.inggarciabaldo.carburo.application.rest.dto.enums;
 
 
 import com.google.gson.annotations.SerializedName;
+import com.inggarciabaldo.carburo.application.model.enums.Margen;
 import lombok.Getter;
 
 @Getter
-public enum MargenDto {
-    @SerializedName("D")
-    DERECHO("D", "Derecho"),
-    @SerializedName("I")
-    IZQUIERDO("I", "Izquierdo"),
-    @SerializedName("N")
-    NO_APLICA("N", "No aplica"); // valor por defecto
+public enum MargenParserDto {
+	@SerializedName("D") DERECHO(Margen.DERECHO),
+	@SerializedName("I") IZQUIERDO(Margen.IZQUIERDO),
+	@SerializedName("N") NO_APLICA(Margen.NO_APLICA);
 
-    //Atributos
-    private final String code;
-    private final String description;
+	//Atributos
+	private final Margen relacionModelo;
 
-    MargenDto(String code, String description) {
-        this.code = code;
-        this.description = description;
-    }
-
-    /**
-     * Devuelve el enumerado a partir del código, por defecto DERECHA si no se encuentra.
-     */
-    public static MargenDto fromCode(String code) {
-        if (code == null)
-            throw new IllegalArgumentException("Código de Margen nulo.");
-        for (MargenDto margin : values()) {
-            if (margin.code.equalsIgnoreCase(code)) {
-                return margin;
-            }
-        }
-        throw new IllegalArgumentException("Código de Margen no encontrado: " + code);
-    }
+	MargenParserDto(Margen margen) {
+		this.relacionModelo = margen;
+	}
 }

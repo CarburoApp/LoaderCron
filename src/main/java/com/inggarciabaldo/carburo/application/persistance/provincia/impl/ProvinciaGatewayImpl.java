@@ -10,7 +10,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.inggarciabaldo.carburo.application.persistance.DBColumns.PROVINCIA_TABLE;
+import static com.inggarciabaldo.carburo.config.persistencia.DBColumns.PROVINCIA_TABLE;
 
 public class ProvinciaGatewayImpl extends AbstractGatewayImpl<ProvinciaRecord>
 		implements ProvinciaGateway {

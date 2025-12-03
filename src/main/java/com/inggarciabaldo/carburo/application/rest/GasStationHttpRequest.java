@@ -1,4 +1,4 @@
-package com.inggarciabaldo.carburo.apiReq;
+package com.inggarciabaldo.carburo.application.rest;
 
 import com.inggarciabaldo.carburo.util.network.HttpClient;
 import com.inggarciabaldo.carburo.util.properties.PropertyLoader;
@@ -20,6 +20,7 @@ import java.util.Map;
  * <p>
  * Los endpoints se definen en el archivo: resources/endpoints.properties
  */
+// TODO
 public class GasStationHttpRequest {
 
 	// ============================

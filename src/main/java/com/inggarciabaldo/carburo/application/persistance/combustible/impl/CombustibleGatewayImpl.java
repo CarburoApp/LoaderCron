@@ -11,7 +11,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.inggarciabaldo.carburo.application.persistance.DBColumns.COMBUSTIBLE_TABLE;
+import static com.inggarciabaldo.carburo.config.persistencia.DBColumns.COMBUSTIBLE_TABLE;
 
 public class CombustibleGatewayImpl extends AbstractGatewayImpl<CombustibleRecord>
 		implements CombustibleGateway {

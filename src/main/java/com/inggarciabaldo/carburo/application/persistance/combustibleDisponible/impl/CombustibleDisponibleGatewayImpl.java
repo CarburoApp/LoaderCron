@@ -12,7 +12,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.inggarciabaldo.carburo.application.persistance.DBColumns.COMBUSTIBLE_DISPONIBLE_TABLE;
+import static com.inggarciabaldo.carburo.config.persistencia.DBColumns.COMBUSTIBLE_DISPONIBLE_TABLE;
 
 public class CombustibleDisponibleGatewayImpl implements CombustibleDisponibleGateway {
 

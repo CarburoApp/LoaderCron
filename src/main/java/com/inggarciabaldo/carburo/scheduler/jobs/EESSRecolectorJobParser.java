@@ -19,6 +19,7 @@ import java.time.format.DateTimeFormatter;
  * <p>
  * La ejecución está protegida para que cualquier error no afecte al cron.
  */
+// TODO
 public class EESSRecolectorJobParser implements Job {
 
 	// Logger específico para la aplicación y para el cron

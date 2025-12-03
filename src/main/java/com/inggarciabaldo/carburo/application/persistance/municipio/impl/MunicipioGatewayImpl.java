@@ -10,7 +10,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
-import static com.inggarciabaldo.carburo.application.persistance.DBColumns.MUNICIPIO_TABLE;
+import static com.inggarciabaldo.carburo.config.persistencia.DBColumns.MUNICIPIO_TABLE;
 
 public class MunicipioGatewayImpl extends AbstractGatewayImpl<MunicipioRecord>
 		implements MunicipioGateway {

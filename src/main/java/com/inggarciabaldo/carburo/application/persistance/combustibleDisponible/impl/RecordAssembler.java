@@ -8,7 +8,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.inggarciabaldo.carburo.application.persistance.DBColumns.*;
+import static com.inggarciabaldo.carburo.config.persistencia.DBColumns.COMBUSTIBLE_DISPONIBLE_ID_COMBUSTIBLE;
+import static com.inggarciabaldo.carburo.config.persistencia.DBColumns.COMBUSTIBLE_DISPONIBLE_ID_EESS;
 
 public class RecordAssembler {
 

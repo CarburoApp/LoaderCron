@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.inggarciabaldo.carburo.application.persistance.DBColumns.*;
+import static com.inggarciabaldo.carburo.config.persistencia.DBColumns.*;
 
 public class RecordAssembler {
 

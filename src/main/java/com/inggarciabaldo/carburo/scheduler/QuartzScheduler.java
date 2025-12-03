@@ -15,6 +15,7 @@ import java.util.Date;
  * Configuración de intervalos y hora de inicio se leen desde application.properties
  * a través de PropertyLoader.
  */
+// TODO
 public class QuartzScheduler {
 
 	//Constantes de la clase

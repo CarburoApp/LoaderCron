@@ -1,34 +1,18 @@
 package com.inggarciabaldo.carburo.application.rest.dto.enums;
 
 import com.google.gson.annotations.SerializedName;
+import com.inggarciabaldo.carburo.application.model.enums.Venta;
 import lombok.Getter;
 
 @Getter
-public enum VentaDto {
-    @SerializedName("P")
-    PUBLICA("P", "Venta al público en general"),
-    @SerializedName("R")
-    RESTRINGIDA("R", "Venta restringida a socios o cooperativistas");
+public enum VentaParserDto {
+	@SerializedName("P") PUBLICA(Venta.PUBLICA),
+	@SerializedName("R") RESTRINGIDA(Venta.RESTRINGIDA);
 
-    private final String code;
-    private final String description;
+	//Atributos
+	private final Venta relacionModelo;
 
-    VentaDto(String code, String description) {
-        this.code = code;
-        this.description = description;
-    }
-
-    /**
-     * Devuelve el enumerado a partir del código, por defecto RESTRINGIDA si no se encuentra.
-     */
-    public static VentaDto fromCode(String code) {
-        if (code == null || code.isEmpty())
-            throw new IllegalArgumentException("Código de Tipo de venta nulo o vació.");
-        for (VentaDto sale : values()) {
-            if (sale.code.equalsIgnoreCase(code)) {
-                return sale;
-            }
-        }
-        throw new IllegalArgumentException("Código de tipo de Venta no encontrado: " + code);
-    }
+	VentaParserDto(Venta venta) {
+		this.relacionModelo = venta;
+	}
 }
