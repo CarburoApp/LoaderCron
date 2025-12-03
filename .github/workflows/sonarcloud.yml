@@ -22,8 +22,9 @@ jobs:
         with:
           distribution: temurin
           java-version: 23
-
-      - name: Build and analyze with
+      - name: Build with Maven
+        run: mvn clean verify
+      - name: SonarCloud Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
