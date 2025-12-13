@@ -1,5 +1,6 @@
 package com.inggarciabaldo.carburo.application.rest.parser;
 
+import com.inggarciabaldo.carburo.application.Factorias;
 import com.inggarciabaldo.carburo.application.model.Combustible;
 import com.inggarciabaldo.carburo.application.model.ES;
 import com.inggarciabaldo.carburo.application.model.Municipio;
@@ -327,17 +328,17 @@ public class EESSParser {
 
 	private Margen parseMargen(JSONObject item) {
 		String code = item.optString(MARGEN).trim();
-		return Margen.fromCode(code);
+		return Factorias.enumFromCode.getMargenFromCodeTool().fromCode(code);
 	}
 
 	private Remision parseRemision(JSONObject item) {
 		String code = item.optString(REMISION).trim();
-		return Remision.fromCode(code);
+		return Factorias.enumFromCode.getRemisionFromCodeTool().fromCode(code);
 	}
 
 	private Venta parseVenta(JSONObject item) {
 		String code = item.optString(TIPO_VENTA).trim();
-		return Venta.fromCode(code);
+		return Factorias.enumFromCode.getVentaFromCodeTool().fromCode(code);
 	}
 
 	private BigDecimal parseBioEtanol(JSONObject item) {
