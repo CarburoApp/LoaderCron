@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.util.List;
 
+import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.*;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,15 +19,15 @@ import java.util.List;
  */
 public class EETTReqResParserDTO {
 
-    @SerializedName("Fecha")
+    @SerializedName(API_KEY_RESP_FECHA)
     private String fecha; // parsearemos a LocalDateTime más adelante si quieres
 
-    @SerializedName("ListaEESSPrecio")
+    @SerializedName(API_KEY_RESP_LISTADO_EESS)
     private List<ESParserDTO> listaEESS;
 
-    @SerializedName("Nota")
+    @SerializedName(API_KEY_RESP_NOTA)
     private String nota;
 
-    @SerializedName("ResultadoConsulta")
+    @SerializedName(API_KEY_RESP_RES_CONSULTA)
     private String resultadoConsulta;
 }

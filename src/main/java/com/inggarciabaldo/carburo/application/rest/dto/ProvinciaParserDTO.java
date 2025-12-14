@@ -3,6 +3,8 @@ package com.inggarciabaldo.carburo.application.rest.dto;
 import com.google.gson.annotations.SerializedName;
 import lombok.*;
 
+import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.*;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -11,16 +13,16 @@ import lombok.*;
 @ToString
 public class ProvinciaParserDTO {
 
-    @SerializedName("IDProvincia")
+    @SerializedName(API_KEY_RESP_PROVINCIA_ID)
     private int idProvincia;
 
-    @SerializedName("IDCCAA")
+    @SerializedName(API_KEY_RESP_CA_ID)
     private int idCCAA;
 
-    @SerializedName("Provincia")
+    @SerializedName(API_KEY_RESP_PROVINCIA_DENOMINACION)
     private String provincia;
 
-    @SerializedName("CCAA")
+    @SerializedName(API_KEY_RESP_CA_DENOMINACION)
     private String ccaa;
 }
 

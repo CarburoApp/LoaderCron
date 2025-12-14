@@ -84,12 +84,8 @@ public class Provincia implements Serializable {
 
 	@Override
 	public String toString() {
-		final StringBuilder sb = new StringBuilder("Provincia{");
-		sb.append("id=").append(id);
-		sb.append(", denominacion='").append(denominacion).append('\'');
-		sb.append(", extCode=").append(extCode);
-		sb.append(", CA=").append(ca);
-		sb.append('}');
-		return sb.toString();
+		String sb = "Provincia{" + "id=" + id + ", denominacion='" + denominacion + '\'' +
+				", extCode=" + extCode + ", CA=" + ca + '}';
+		return sb;
 	}
 }

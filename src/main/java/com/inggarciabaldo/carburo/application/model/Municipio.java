@@ -79,12 +79,9 @@ public class Municipio implements Serializable {
 
 	@Override
 	public String toString() {
-		final StringBuilder sb = new StringBuilder("Municipio{");
-		sb.append("id=").append(id);
-		sb.append(", denominacion='").append(denominacion).append('\'');
-		sb.append(", extCode=").append(extCode);
-		sb.append(", provincia=").append(provincia.getDenominacion());
-		sb.append('}');
-		return sb.toString();
+		String sb = "Municipio{" + "id=" + id + ", denominacion='" + denominacion + '\'' +
+				", extCode=" + extCode + ", provincia=" + provincia.getDenominacion() +
+				'}';
+		return sb;
 	}
 }

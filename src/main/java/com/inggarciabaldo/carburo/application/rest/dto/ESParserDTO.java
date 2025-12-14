@@ -5,6 +5,7 @@ import com.inggarciabaldo.carburo.application.rest.dto.enums.MargenParserDto;
 import com.inggarciabaldo.carburo.application.rest.dto.enums.RemisionParserDto;
 import com.inggarciabaldo.carburo.application.rest.dto.enums.VentaParserDto;
 import lombok.*;
+import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.*;
 
 @Getter
 @Setter
@@ -17,66 +18,66 @@ import lombok.*;
  * Pensado para ser usado en peticiones de EESS.
  */ public class ESParserDTO {
 
-	@SerializedName("IDEESS")
+	@SerializedName(API_KEY_RESP_EESS_ID)
 	private int ideess;
 
-	@SerializedName("Rótulo")
+	@SerializedName(API_KEY_RESP_EESS_ROTULO)
 	private String rotulo;
 
-	@SerializedName("Dirección")
+	@SerializedName(API_KEY_RESP_EESS_DIRECCION)
 	private String direccion;
 
-	@SerializedName("Horario")
+	@SerializedName(API_KEY_RESP_EESS_HORARIO)
 	private String horario;
 
-	@SerializedName("Localidad")
+	@SerializedName(API_KEY_RESP_EESS_LOCALIDAD)
 	private String localidad;
 
-	@SerializedName("Municipio")
+	@SerializedName(API_KEY_RESP_MUNICIPIO_DENOMINACION)
 	private String municipio;
 
-	@SerializedName("C.P.")
+	@SerializedName(API_KEY_RESP_EESS_CP)
 	private int cp;
 
-	@SerializedName("Provincia")
+	@SerializedName(API_KEY_RESP_PROVINCIA_DENOMINACION)
 	private String provincia;
 
-	@SerializedName("IDMunicipio")
+	@SerializedName(API_KEY_RESP_MUNICIPIO_ID)
 	private int idMunicipio;
 
-	@SerializedName("IDProvincia")
+	@SerializedName(API_KEY_RESP_PROVINCIA_ID)
 	private int idProvincia;
 
-	@SerializedName("IDCCAA")
+	@SerializedName(API_KEY_RESP_CA_ID)
 	private int idCCAA;
 
-	@SerializedName("Margen")
+	@SerializedName(API_KEY_RESP_EESS_MARGEN)
 	private MargenParserDto margen;
 
-	@SerializedName("Remisión")
+	@SerializedName(API_KEY_RESP_EESS_REMISION)
 	private RemisionParserDto remision;
 
-	@SerializedName("Tipo Venta")
+	@SerializedName(API_KEY_RESP_EESS_VENTA)
 	private VentaParserDto tipoVenta;
 
-	@SerializedName("Latitud")
+	@SerializedName(API_KEY_RESP_EESS_LATITUD)
 	private String latitud; // String por la coma, luego puedes convertir a double
 
-	@SerializedName("Longitud (WGS84)")
+	@SerializedName(API_KEY_RESP_EESS_LONGITUD)
 	private String longitud; // idem
 
-	@SerializedName("Precio Gasoleo A")
+	@SerializedName("Precio Gasoleo A") // TODO Debe de ser eliminado más adelante
 	private String precioGasoleoA;
 
-	@SerializedName("Precio Gasolina 95 E5")
+	@SerializedName("Precio Gasolina 95 E5") // TODO Debe de ser eliminado más adelante
 	private String precioGasolina95E5;
 
-	@SerializedName("Precio Gasolina 98 E5")
+	@SerializedName("Precio Gasolina 98 E5") // TODO Debe de ser eliminado más adelante
 	private String precioGasolina98E5;
 
-	@SerializedName("% BioEtanol")
+	@SerializedName(API_KEY_RESP_EESS_X_100_BIOETANOL)
 	private String bioEtanol;
 
-	@SerializedName("% Éster metílico")
+	@SerializedName(API_KEY_RESP_EESS_X_100_ESTER_METILICO)
 	private String esterMetilico;
 }

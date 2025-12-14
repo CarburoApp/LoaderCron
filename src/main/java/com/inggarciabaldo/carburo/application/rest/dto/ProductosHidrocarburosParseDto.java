@@ -1,6 +1,6 @@
 package com.inggarciabaldo.carburo.application.rest.dto;
 
-import com.google.gson.annotations.SerializedName;
+import com.google.gson.annotations.SerializedName;import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.*;
 import lombok.*;
 
 /**
@@ -15,12 +15,12 @@ import lombok.*;
 @ToString
 public class ProductosHidrocarburosParseDto {
 
-    @SerializedName("IDProducto")
+    @SerializedName(API_KEY_RESP_PRODUCTO_ID)
     private int idProducto;
 
-    @SerializedName("NombreProducto")
+    @SerializedName(API_KEY_RESP_PRODUCTO_DENOMINACION)
     private String nombreProducto;
 
-    @SerializedName("NombreProductoAbreviatura")
+    @SerializedName(API_KEY_RESP_PRODUCTO_ABREVIATURA)
     private String abreviaturaNombreProducto;
 }

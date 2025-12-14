@@ -3,6 +3,8 @@ package com.inggarciabaldo.carburo.application.rest.dto;
 import com.google.gson.annotations.SerializedName;
 import lombok.*;
 
+import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.*;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,72 +17,72 @@ import lombok.*;
  */
 public class PreciosCarburanteParserDTO {
 
-    @SerializedName("Precio Adblue")
+    @SerializedName(API_KEY_RESP_PRECIO_ADBLUE)
     private String precioAdblue;
 
-    @SerializedName("Precio Amoniaco")
+    @SerializedName(API_KEY_RESP_PRECIO_AMONIACO)
     private String precioAmoniaco;
 
-    @SerializedName("Precio Biodiesel")
+    @SerializedName(API_KEY_RESP_PRECIO_BIODIESEL)
     private String precioBiodiesel;
 
-    @SerializedName("Precio Bioetanol")
+    @SerializedName(API_KEY_RESP_PRECIO_BIOETANOL)
     private String precioBioetanol;
 
-    @SerializedName("Precio Biogas Natural Comprimido")
+    @SerializedName(API_KEY_RESP_PRECIO_BIOGAS_NATURAL_COMPRIMIDO)
     private String precioBiogasNaturalComprimido;
 
-    @SerializedName("Precio Biogas Natural Licuado")
+    @SerializedName(API_KEY_RESP_PRECIO_BIOGAS_NATURAL_LIQUIDO)
     private String precioBiogasNaturalLicuado;
 
-    @SerializedName("Precio Diésel Renovable")
+    @SerializedName(API_KEY_RESP_PRECIO_DIESEL_RENOVABLE)
     private String precioDieselRenovable;
 
-    @SerializedName("Precio Gas Natural Comprimido")
+    @SerializedName(API_KEY_RESP_PRECIO_GAS_NATURAL_COMPRIMIDO)
     private String precioGasNaturalComprimido;
 
-    @SerializedName("Precio Gas Natural Licuado")
+    @SerializedName(API_KEY_RESP_PRECIO_GAS_NATURAL_LIQUIDO)
     private String precioGasNaturalLicuado;
 
-    @SerializedName("Precio Gases licuados del petróleo")
+    @SerializedName(API_KEY_RESP_PRECIO_GLP)
     private String precioGLP;
 
-    @SerializedName("Precio Gasoleo A")
+    @SerializedName(API_KEY_RESP_PRECIO_GASOLEO_A)
     private String precioGasoleoA;
 
-    @SerializedName("Precio Gasoleo B")
+    @SerializedName(API_KEY_RESP_PRECIO_GASOLEO_B)
     private String precioGasoleoB;
 
-    @SerializedName("Precio Gasoleo Premium")
+    @SerializedName(API_KEY_RESP_PRECIO_GASOLEO_PREMIUM)
     private String precioGasoleoPremium;
 
-    @SerializedName("Precio Gasolina 95 E10")
+    @SerializedName(API_KEY_RESP_PRECIO_GASOLINA_95_E10)
     private String precioGasolina95E10;
 
-    @SerializedName("Precio Gasolina 95 E25")
+    @SerializedName(API_KEY_RESP_PRECIO_GASOLINA_95_E25)
     private String precioGasolina95E25;
 
-    @SerializedName("Precio Gasolina 95 E5")
+    @SerializedName(API_KEY_RESP_PRECIO_GASOLINA_95_E5)
     private String precioGasolina95E5;
 
-    @SerializedName("Precio Gasolina 95 E5 Premium")
+    @SerializedName(API_KEY_RESP_PRECIO_GASOLINA_95_E5_PREMIUM)
     private String precioGasolina95E5Premium;
 
-    @SerializedName("Precio Gasolina 95 E85")
+    @SerializedName(API_KEY_RESP_PRECIO_GASOLINA_95_E85)
     private String precioGasolina95E85;
 
-    @SerializedName("Precio Gasolina 98 E10")
+    @SerializedName(API_KEY_RESP_PRECIO_GASOLINA_98_E10)
     private String precioGasolina98E10;
 
-    @SerializedName("Precio Gasolina 98 E5")
+    @SerializedName(API_KEY_RESP_PRECIO_GASOLINA_98_E5)
     private String precioGasolina98E5;
 
-    @SerializedName("Precio Gasolina Renovable")
+    @SerializedName(API_KEY_RESP_PRECIO_GASOLINA_RENOVABLE)
     private String precioGasolinaRenovable;
 
-    @SerializedName("Precio Hidrogeno")
+    @SerializedName(API_KEY_RESP_PRECIO_HIDROGENO)
     private String precioHidrogeno;
 
-    @SerializedName("Precio Metanol")
+    @SerializedName(API_KEY_RESP_PRECIO_METANOL)
     private String precioMetanol;
 }
