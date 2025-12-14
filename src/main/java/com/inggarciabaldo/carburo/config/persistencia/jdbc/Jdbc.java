@@ -96,10 +96,11 @@ public class Jdbc {
 	 * @return true si la conexión se establece correctamente; false si ocurre un error.
 	 */
 	public static boolean testConnection() {
-		try (Connection con = DriverManager.getConnection(
+		try {
+			DriverManager.getConnection(
 				config.getApplicationProperty(URL_PROPERTY),
 				config.getApplicationProperty(USER_PROPERTY),
-				config.getApplicationProperty(PASS_PROPERTY))) {
+				config.getApplicationProperty(PASS_PROPERTY));
 
 			Loggers.DB.info("Conexión de prueba establecida correctamente.");
 			return true;

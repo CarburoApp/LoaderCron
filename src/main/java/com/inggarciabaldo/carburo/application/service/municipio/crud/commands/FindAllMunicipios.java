@@ -2,7 +2,6 @@ package com.inggarciabaldo.carburo.application.service.municipio.crud.commands;
 
 import com.inggarciabaldo.carburo.application.Factorias;
 import com.inggarciabaldo.carburo.application.model.Municipio;
-import com.inggarciabaldo.carburo.application.model.Provincia;
 import com.inggarciabaldo.carburo.application.persistance.municipio.MunicipioGateway;
 import com.inggarciabaldo.carburo.application.persistance.municipio.MunicipioGateway.MunicipioRecord;
 import com.inggarciabaldo.carburo.application.service.municipio.crud.EntityAssembler;

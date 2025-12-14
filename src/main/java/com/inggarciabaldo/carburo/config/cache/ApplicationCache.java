@@ -63,24 +63,6 @@ public class ApplicationCache {
 		logger.info(LOG_ETIQUETA_CACHE + "Se ha limpiado la caché.");
 	}
 
-	/**
-	 * <b>IRREVERSIBLE</b><p>
-	 * <b>SOLO USAR SI NO SE VA A VOLVER A USAR</b>
-	 * <p>
-	 * Destruye la instancia singleton de la caché de la aplicación,
-	 * limpiando sus datos y liberando memoria.
-	 * Esto supondrá no poder volver a usar la caché en el mismo ciclo de vida.
-	 * <p>
-	 * ESTO DEJA A NULL LA ÚNICA INSTANCIA DE LA CLASE SINGLETON.
-	 */
-	public static void destroy() {
-		if (instance != null) {
-			instance.clearCache();
-			instance = null;
-		}
-	}
-
-
 	/*
 	 * Tipos de Combustble
 	 */
