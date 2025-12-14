@@ -3,32 +3,33 @@ package com.inggarciabaldo.carburo.application.model;
 import lombok.Getter;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 @Getter
-// TODO
 public class Combustible implements Serializable {
 
-	private Short id;
-
+	/**
+	 * Atributos de la clase
+	 */
+	private short id;
 	private String denominacion;
-
 	private String codigo;
-
-	private BigDecimal extCode;
-
-	//Disponibilidad de combustible
-	private final Set<ES> estaciones = new HashSet<>();
-
+	private short extCode;
 
 	// ======================
 	// Constructores
 	// ======================
 
-	public Combustible(String denominacion, String codigo, BigDecimal extCode) {
+	/**
+	 * Constructor completo de la clase Combustible
+	 *
+	 * @param id           del combustible
+	 * @param denominacion del combustible
+	 * @param codigo       del combustible
+	 * @param extCode      código externo (API) del combustible
+	 */
+	public Combustible(short id, String denominacion, String codigo, short extCode) {
+		setId(id);
 		setDenominacion(denominacion);
 		setCodigo(codigo);
 		setExtCode(extCode);
@@ -38,8 +39,8 @@ public class Combustible implements Serializable {
 	// Setters con validación
 	// ======================
 
-	public void setId(Short id) {
-		if (id != null && id < 0) throw new IllegalArgumentException(
+	public void setId(short id) {
+		if (id < 0) throw new IllegalArgumentException(
 				"El ID del combustible no puede ser negativo");
 		this.id = id;
 	}
@@ -59,17 +60,13 @@ public class Combustible implements Serializable {
 		this.codigo = (codigo != null) ? codigo.trim() : null;
 	}
 
-	public void setExtCode(BigDecimal extCode) {
-		if (extCode == null)
-			throw new IllegalArgumentException("El código externo no puede ser nulo.");
-		if (extCode.scale() != 0) // verifica que sea un entero
+	public void setExtCode(short extCode) {
+		if (extCode < 0) // verifica que sea un entero
 			throw new IllegalArgumentException(
 					"El código externo debe ser un número entero.");
-		if (extCode.compareTo(BigDecimal.ZERO) < 0 ||
-				extCode.compareTo(BigDecimal.valueOf(99)) > 0)
+		if (extCode > 99)
 			throw new IllegalArgumentException(
 					"El código externo debe estar entre 0 y 99.");
-
 		this.extCode = extCode;
 	}
 

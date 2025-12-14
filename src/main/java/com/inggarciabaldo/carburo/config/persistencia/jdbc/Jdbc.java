@@ -71,7 +71,7 @@ public class Jdbc {
 				config.getApplicationProperty(USER_PROPERTY),
 				config.getApplicationProperty(PASS_PROPERTY));
 		threadConnection.set(con);
-		Loggers.DB.info("Conexión creada para el hilo: {}",
+		Loggers.DB.info("[JDBC] Conexión creada para el hilo: {}",
 						Thread.currentThread().getName());
 		return con;
 	}

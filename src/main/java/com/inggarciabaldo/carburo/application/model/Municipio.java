@@ -8,6 +8,10 @@ import java.util.Objects;
 @Getter
 public class Municipio implements Serializable {
 
+	// ======================
+	// Campos
+	// ======================
+
 	private short id;
 	private String denominacion;
 	private short extCode;
@@ -79,9 +83,8 @@ public class Municipio implements Serializable {
 
 	@Override
 	public String toString() {
-		String sb = "Municipio{" + "id=" + id + ", denominacion='" + denominacion + '\'' +
+		return "Municipio{" + "id=" + id + ", denominacion='" + denominacion + '\'' +
 				", extCode=" + extCode + ", provincia=" + provincia.getDenominacion() +
 				'}';
-		return sb;
 	}
 }

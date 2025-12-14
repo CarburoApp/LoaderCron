@@ -14,7 +14,7 @@ public class Provincia implements Serializable {
 	private short id;
 	private String denominacion;
 	private short extCode;
-	private CA ca;
+	private ComunidadAutonoma comunidadAutonoma;
 
 	// ==============================
 	// CONSTRUCTORES
@@ -23,11 +23,11 @@ public class Provincia implements Serializable {
 	/**
 	 * Constructor lógico
 	 */
-	public Provincia(short id, String denominacion, short extCode, CA ca) {
+	public Provincia(short id, String denominacion, short extCode, ComunidadAutonoma comunidadAutonoma) {
 		setId(id);
 		setDenominacion(denominacion);
 		setExtCode(extCode);
-		setCa(ca);
+		setComunidadAutonoma(comunidadAutonoma);
 	}
 
 	// ==============================
@@ -57,10 +57,10 @@ public class Provincia implements Serializable {
 	}
 
 
-	public void setCa(CA ca) {
-		if (ca == null) throw new IllegalArgumentException(
+	public void setComunidadAutonoma(ComunidadAutonoma comunidadAutonoma) {
+		if (comunidadAutonoma == null) throw new IllegalArgumentException(
 				"La provincia debe pertenecer a una CCAA.");
-		this.ca = ca;
+		this.comunidadAutonoma = comunidadAutonoma;
 	}
 
 	// ==============================
@@ -72,20 +72,17 @@ public class Provincia implements Serializable {
 	public boolean equals(Object o) {
 		if (o == null || getClass() != o.getClass()) return false;
 		Provincia provincia = (Provincia) o;
-		return id == provincia.id && extCode == provincia.extCode &&
-				Objects.equals(denominacion, provincia.denominacion) &&
-				Objects.equals(ca, provincia.ca);
+		return id == provincia.id;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(id, denominacion, extCode, ca);
+		return Objects.hash(id);
 	}
 
 	@Override
 	public String toString() {
-		String sb = "Provincia{" + "id=" + id + ", denominacion='" + denominacion + '\'' +
-				", extCode=" + extCode + ", CA=" + ca + '}';
-		return sb;
+		return "Provincia{" + "id=" + id + ", denominacion='" + denominacion + '\'' +
+				", extCode=" + extCode + ", CA=" + comunidadAutonoma + '}';
 	}
 }

@@ -14,9 +14,9 @@ public class RecordAssembler {
 	public static CCAARecord toCCAARecord(ResultSet rs) throws SQLException {
 		CCAARecord result = new CCAARecord();
 
-		result.id           = rs.getInt(CCAA_ID);
+		result.id           = rs.getShort(CCAA_ID);
 		result.denominacion = rs.getString(CCAA_DENOMINACION);
-		result.extCode      = rs.getInt(CCAA_EXT_CODE);
+		result.extCode      = rs.getShort(CCAA_EXT_CODE);
 
 		return result;
 	}

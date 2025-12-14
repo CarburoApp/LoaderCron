@@ -28,15 +28,15 @@ public class PrecioCombustible implements Serializable {
 	// ==============================
 	private LocalDate fecha;
 	private Combustible combustible;
-	private ES es;
+	private EstacionDeServicio estacionDeServicio;
 	private double precio;
 
 	// ==============================
 	// CONSTRUCTOR
 	// ==============================
-	public PrecioCombustible(ES es, Combustible combustible, LocalDate fecha,
+	public PrecioCombustible(EstacionDeServicio estacionDeServicio, Combustible combustible, LocalDate fecha,
 							 double precio) {
-		setEs(es);
+		setEs(estacionDeServicio);
 		setCombustible(combustible);
 		setFecha(fecha);
 		setPrecio(precio);
@@ -45,12 +45,12 @@ public class PrecioCombustible implements Serializable {
 	// ==============================
 	// SETTERS CON VALIDACIÓN
 	// ==============================
-	public void setEs(ES es) {
-		if (es == null) {
+	public void setEs(EstacionDeServicio estacionDeServicio) {
+		if (estacionDeServicio == null) {
 			throw new IllegalArgumentException(
 					"La estación de servicio (ES) no puede ser nula");
 		}
-		this.es = es;
+		this.estacionDeServicio = estacionDeServicio;
 	}
 
 	public void setCombustible(Combustible combustible) {
@@ -90,8 +90,8 @@ public class PrecioCombustible implements Serializable {
 		return combustible;
 	}
 
-	public ES getEs() {
-		return es;
+	public EstacionDeServicio getEs() {
+		return estacionDeServicio;
 	}
 
 	public double getPrecio() {
@@ -107,18 +107,18 @@ public class PrecioCombustible implements Serializable {
 		if (!(o instanceof PrecioCombustible that)) return false;
 		return Objects.equals(fecha, that.fecha) &&
 				Objects.equals(combustible, that.combustible) &&
-				Objects.equals(es, that.es) && Objects.equals(precio, that.precio);
+				Objects.equals(estacionDeServicio, that.estacionDeServicio) && Objects.equals(precio, that.precio);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(fecha, combustible, es, precio);
+		return Objects.hash(fecha, combustible, estacionDeServicio, precio);
 	}
 
 	@Override
 	public String toString() {
 		return "PrecioCombustible{" + "fecha=" + fecha.toString() + ", combustible=" +
-				combustible.getDenominacion() + ", ES=" + es.getId() + ", precio=" +
+				combustible.getDenominacion() + ", ES=" + estacionDeServicio.getId() + ", precio=" +
 				precio + '}';
 	}
 }

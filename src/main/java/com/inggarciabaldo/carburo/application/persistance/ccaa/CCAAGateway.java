@@ -6,8 +6,8 @@ import com.inggarciabaldo.carburo.application.persistance.ccaa.CCAAGateway.CCAAR
 public interface CCAAGateway extends Gateway<CCAARecord> {
 
 	class CCAARecord {
-		public int id;
+		public short id;
 		public String denominacion;
-		public int extCode;
+		public short extCode;
 	}
 }

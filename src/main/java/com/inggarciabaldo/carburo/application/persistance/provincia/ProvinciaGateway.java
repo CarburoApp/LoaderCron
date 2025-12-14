@@ -9,6 +9,6 @@ public interface ProvinciaGateway extends Gateway<ProvinciaRecord> {
 		public short id;
 		public String denominacion;
 		public short extCode;
-		public Short idCCAA; // FK a CCAA
+		public short idCCAA; // FK a CCAA
 	}
 }

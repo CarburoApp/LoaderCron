@@ -23,7 +23,7 @@ public interface ResponseKeys {
 	String API_KEY_RESP_EESS_VENTA = "Tipo Venta";
 	String API_KEY_RESP_EESS_LATITUD = "Latitud";
 	String API_KEY_RESP_EESS_LONGITUD = "Longitud (WGS84)";
-	String API_KEY_RESP_EESS_X_100_BIOETANOL = "% BiotaEnol";
+	String API_KEY_RESP_EESS_X_100_BIOETANOL = "% BioEtanol";
 	String API_KEY_RESP_EESS_X_100_ESTER_METILICO = "% Éster metílico";
 
 	// Claves específicas para las CCAA
@@ -48,6 +48,7 @@ public interface ResponseKeys {
 	String API_KEY_RESP_PRODUCTO_ABREVIATURA = "NombreProductoAbreviatura";
 
 	// Claves para los precios de combustibles
+	String API_KEY_RESP_PRECIO_PRODUCTO = "Precio";
 	String API_KEY_RESP_PRECIO_ADBLUE = "Precio Adblue";
 	String API_KEY_RESP_PRECIO_AMONIACO = "Precio Amoniaco";
 	String API_KEY_RESP_PRECIO_BIODIESEL = "Precio Biodiesel";
@@ -84,6 +85,4 @@ public interface ResponseKeys {
 	String API_KEY_RESP_MARGEN_IZQUIERDO = "I";
 	String API_KEY_RESP_MARGEN_DERECHO = "D";
 	String API_KEY_RESP_MARGEN_NO_APLICA = "N";
-
-
 }

@@ -1,4 +1,4 @@
-package com.inggarciabaldo.carburo.util.deserialize;
+package com.inggarciabaldo.carburo.config.parser.deserialize;
 
 
 import com.google.gson.*;

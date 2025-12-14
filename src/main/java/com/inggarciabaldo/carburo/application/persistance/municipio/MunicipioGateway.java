@@ -9,6 +9,6 @@ public interface MunicipioGateway extends Gateway<MunicipioRecord> {
 		public short id;
 		public String denominacion;
 		public short extCode;
-		public Short idProvincia;
+		public short idProvincia;
 	}
 }

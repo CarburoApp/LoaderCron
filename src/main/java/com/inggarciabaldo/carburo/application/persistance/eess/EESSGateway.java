@@ -12,14 +12,14 @@ public interface EESSGateway extends Gateway<EESSRecord> {
 		public String horario;
 		public String direccion;
 		public String localidad;
-		public Integer codigoPostal;
-		public Short idMunicipio;
-		public Short idProvincia;
-		public Double latitud;
-		public Double longitud;
+		public int codigoPostal;
+		public short idMunicipio;
+		public short idProvincia;
+		public double latitud;
+		public double longitud;
 		public String remision;
-		public Double x100BioEtanol;
-		public Double x100EsterMetilico;
+		public double x100BioEtanol;
+		public double x100EsterMetilico;
 		public String margen;
 		public String venta;
 	}

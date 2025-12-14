@@ -5,6 +5,7 @@ import com.inggarciabaldo.carburo.application.model.enums.fromcode.EnumFromCodeF
 import com.inggarciabaldo.carburo.application.model.enums.fromcode.EnumFromCodeFactoryInterface;
 import com.inggarciabaldo.carburo.application.model.enums.fromcode.FromCode;
 import com.inggarciabaldo.carburo.application.persistance.PersistenceFactory;
+import com.inggarciabaldo.carburo.application.service.ServiceFactory;
 
 /**
  * Clase centralizadora de factorías de la aplicación.
@@ -36,5 +37,11 @@ public class Factorias {
 	 */
 	public static EnumFromCodeFactoryInterface enumFromCode = new EnumFromCodeFactory();
 
-	//public static ServiceFactory service = new ServiceFactory();
+	/**
+	 * Factoría encargada de la capa de servicios.
+	 * <p>
+	 * Proporciona acceso a los distintos servicios
+	 * que implementan la lógica de negocio de la aplicación.
+	 */
+	public static ServiceFactory service = new ServiceFactory();
 }
