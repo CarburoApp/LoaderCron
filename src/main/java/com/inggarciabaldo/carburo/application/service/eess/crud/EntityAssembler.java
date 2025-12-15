@@ -4,14 +4,17 @@ package com.inggarciabaldo.carburo.application.service.eess.crud;
 import com.inggarciabaldo.carburo.application.Factorias;
 import com.inggarciabaldo.carburo.application.model.EstacionDeServicio;
 import com.inggarciabaldo.carburo.application.model.Municipio;
+import com.inggarciabaldo.carburo.application.model.PrecioCombustible;
 import com.inggarciabaldo.carburo.application.model.Provincia;
 import com.inggarciabaldo.carburo.application.model.enums.Margen;
 import com.inggarciabaldo.carburo.application.model.enums.Remision;
 import com.inggarciabaldo.carburo.application.model.enums.Venta;
 import com.inggarciabaldo.carburo.application.persistance.eess.EESSGateway.EESSRecord;
+import com.inggarciabaldo.carburo.application.persistance.precioCombustible.PrecioCombustibleGateway.PrecioCombustibleRecord;
 import com.inggarciabaldo.carburo.config.cache.ApplicationCache;
 import com.inggarciabaldo.carburo.util.log.Loggers;
 
+import java.sql.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -75,6 +78,16 @@ public class EntityAssembler {
 		m.x100BioEtanol     = entity.getX100BioEtanol();
 		m.x100EsterMetilico = entity.getX100EsterMetilico();
 
+		return m;
+	}
+
+	public static PrecioCombustibleRecord toPrecioCombustibleRecord(
+			PrecioCombustible entity) {
+		PrecioCombustibleRecord m = new PrecioCombustibleRecord();
+		m.idCombustible = entity.getCombustible().getId();
+		m.idEess        = entity.getEstacionDeServicio().getId();
+		m.fecha         = Date.valueOf(entity.getFecha());
+		m.precio        = entity.getPrecio();
 		return m;
 	}
 

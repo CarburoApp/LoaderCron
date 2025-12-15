@@ -5,8 +5,8 @@ import lombok.Getter;
 
 @Getter
 public enum Venta implements GetCodeEnumInterface {
-	PUBLICA("P", "Venta al público en general"),
-	RESTRINGIDA("R", "Venta restringida a socios o cooperativistas");
+	PUBLICA("PUBLICA", "Venta al público en general"),
+	RESTRINGIDA("RESTRINGIDA", "Venta restringida a socios o cooperativistas");
 
 	private final String code;
 	private final String description;

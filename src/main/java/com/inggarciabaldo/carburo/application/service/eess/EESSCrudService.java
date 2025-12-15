@@ -11,5 +11,7 @@ public interface EESSCrudService {
 
 	Optional<EstacionDeServicio> findEESSById(String id);
 
+	Optional<EstacionDeServicio> findEESSByExtCode(int extCodeId);
+
 	List<EstacionDeServicio> findAllEESS();
 }

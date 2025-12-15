@@ -5,9 +5,9 @@ import lombok.Getter;
 
 @Getter
 public enum Margen implements GetCodeEnumInterface {
-    DERECHO("D", "Derecho"),
-    IZQUIERDO("I", "Izquierdo"),
-    NO_APLICA("N", "No aplica"); // valor por defecto
+    DERECHO("DERECHO", "Derecho"),
+    IZQUIERDO("IZQUIERDO", "Izquierdo"),
+    NO_APLICA("NO_APLICA", "No aplica"); // valor por defecto
 
     //Atributos
     private final String code;

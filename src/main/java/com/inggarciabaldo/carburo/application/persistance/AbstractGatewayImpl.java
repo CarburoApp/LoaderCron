@@ -94,7 +94,7 @@ public abstract class AbstractGatewayImpl<T> implements Gateway<T> {
 	 * Obtiene la consulta SQL correspondiente a una operación para esta tabla.
 	 * Las claves se construyen como NOMBRETABLA_OPERACION.
 	 */
-	private String getQuery(String operation) {
+	protected String getQuery(String operation) {
 		String key = getTableName() + "_" + operation;
 		String value = propertyLoader.getQuerieKeyProperty(key.toUpperCase());
 		if (value == null || value.isEmpty()) throw new IllegalStateException(

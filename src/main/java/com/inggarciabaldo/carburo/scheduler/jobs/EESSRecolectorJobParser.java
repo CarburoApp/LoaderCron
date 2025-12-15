@@ -3,12 +3,13 @@ package com.inggarciabaldo.carburo.scheduler.jobs;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
+import com.inggarciabaldo.carburo.application.Factorias;
 import com.inggarciabaldo.carburo.application.model.EstacionDeServicio;
 import com.inggarciabaldo.carburo.application.rest.GasStationHttpRequest;
 import com.inggarciabaldo.carburo.application.rest.dto.EETTReqResParserDTO;
 import com.inggarciabaldo.carburo.application.rest.dto.ESParserDTO;
 import com.inggarciabaldo.carburo.application.rest.parser.EETTReqResParser;
-import com.inggarciabaldo.carburo.application.rest.parser.PreciosCombustibleParser;
+import com.inggarciabaldo.carburo.application.service.ServiceFactory;
 import com.inggarciabaldo.carburo.config.cache.ApplicationCache;
 import com.inggarciabaldo.carburo.config.parser.deserialize.ESParserDTODeserializer;
 import com.inggarciabaldo.carburo.config.persistencia.jdbc.Jdbc;
@@ -25,9 +26,10 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.*;
 
@@ -70,12 +72,12 @@ public class EESSRecolectorJobParser implements Job {
 	private long tiempoParseoEESSMs;
 	private long tiempoPersistenciaMs;
 	private long tiempoTotalCron;
-	private int totalEESSEnJson;
-	private int totalEESSEnDTO;
-	private int totalEESSParseadas;
-	private int totalEESSInsertadas;
-	private int totalEESSActualizadas;
-	private int totalPreciosEESSInsertados;
+	private int totalEESSEnJson = 0;
+	private int totalEESSEnDTO = 0;
+	private int totalEESSParseadas = 0;
+	private int totalEESSInsertadas = 0;
+	private final int totalEESSActualizadas = 0;
+	private final int totalPreciosEESSInsertados = 0;
 
 	/**
 	 * Job principal que se ejecuta periódicamente.
@@ -164,6 +166,15 @@ public class EESSRecolectorJobParser implements Job {
 			return;
 		}
 
+		// Persistencia
+		{
+			loggerCron.info("Comienza la fase de persistencia.");
+			long tiempoInicioPersistencia = System.currentTimeMillis();
+			persistirEnBD(listadoDeEESSObtenidas);
+			this.tiempoPersistenciaMs =
+					System.currentTimeMillis() - tiempoInicioPersistencia;
+		}
+
 		/*
 		 * 6. Una vez todas las estaciones y precios hayan sido parseados y persistidos, cerrar la conexión con la BD.
 		 * 7. Registrar en el log el resumen de la ejecución del cron.
@@ -174,14 +185,6 @@ public class EESSRecolectorJobParser implements Job {
 		// Dado que es el fin del ciclo de vida limpiamos cualquier recurso abierto
 		ApplicationCache.instance.clearCache();
 		finEjecucionCronYRegistroInformeEjecucion();
-
-		//		// 3. Persistencia TODO
-		//		long tiempoPersistenciaMs;
-		//		{
-		//			long inicioPersistencia = System.currentTimeMillis();
-		//			persistirBatch(ESParseados);
-		//			tiempoPersistenciaMs = System.currentTimeMillis() - inicioPersistencia;
-		//		}
 	}
 
 	/**
@@ -345,41 +348,74 @@ public class EESSRecolectorJobParser implements Job {
 									 "Error al guardar la respuesta de la API en archivo: {}",
 							 e.getMessage(), e);
 		}
-
 	}
 
 	/**
-	 * Registra el informe de la ejecución del cron en el log y envía el correo con el informe.
+	 * Este metodo se encargará de comparar aquellas estaciones de servicio parseadas,
+	 * actualmente introducidas por parámetro con las ya existentes en la base de datos.
+	 * Si no existe la estación de servicio, se persistirá. Si ya existe, se comprobará si
+	 * alguno de sus datos ha cambiado y en caso afirmativo se actualizará.
+	 <p>
+	 * A parte, comprobará los precios de cada estación de servicio y, si no existen en la base de datos, los persistirá. En caso de que existan, comprobará si han cambiado y los actualizará en caso afirmativo.
+	 * Hará lo correspondiente con la disponibilidad de cada estación de servicio.
+	 *
+	 * @param estacionDeServicios @{@link Collection} de estaciones de servicio parseadas a persistir
 	 */
-	private void finEjecucionCronYRegistroInformeEjecucion() {
-		this.fechaFinEjecucion = LocalDateTime.now();
-		// Registro del resumen en el log
-		String resumenCron = "<<< Resumen ejecución CRON >>>\n" + "Hora de inicio: " +
-				formatoHora(fechaInicioEjecucion) + ", Hora de fin: " +
-				formatoHora(fechaFinEjecucion) + "\n" + "Tiempo total empleado: " +
-				formatoTiempo(tiempoTotalCron) + "\n" +
-				"Total EESS recuperadas en JSON: " + totalEESSEnJson + "\n" +
-				"Total EESS recuperadas en DTO: " + totalEESSEnDTO + "\n" +
-				"Total EESS parseadas correctamente: " + totalEESSParseadas + "\n" +
-				"Tiempo de petición API: " + formatoTiempo(tiempoPeticionApiMs) + "\n" +
-				"Tiempo de parseo JSON -> DTO: " + formatoTiempo(tiempoJSONParseoDTOMs) +
-				"\n" + "Tiempo de persistencia: " + formatoTiempo(tiempoPersistenciaMs) +
-				"\n";
+	private void persistirEnBD(Collection<EstacionDeServicio> estacionDeServicios) {
+		// Comprobaciones
+		if (estacionDeServicios == null) throw new IllegalArgumentException(
+				"No se puede persistir estaciones de servicios ya que la colección introducida es nula.");
+		if (estacionDeServicios.isEmpty()) {
+			loggerCron.warn(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
+									"La lista de estaciones de servicio recibida para persistir está vacía.");
+			return;
+		}
 
-		loggerCron.info(resumenCron);
 
-		//Envio de correo con el informe de la ejecución del
-		// TODO JobEmailSender emailSender = new JobEmailSender();
+		ServiceFactory servicio = Factorias.service;
 
-		// Log indicando la finalización del cron y el estado del envío del correo
-		loggerCron.info(
-				"<<< CRON Finalizado >>> Hora de fin: {}. ¿Se ha enviado el informe por correo? {}.",
-				formatoHora(fechaFinEjecucion), ("No")); // TODO corregir condición
+		// Ordenamos las estaciones por su extCode o id
+		Collection<EstacionDeServicio> estacionDeServiciosSorted = estacionDeServicios.stream()
+				.sorted(Comparator.comparing(EstacionDeServicio::getExtCode)).toList();
+
+		for (EstacionDeServicio eess : estacionDeServiciosSorted) {
+			// Obtenemos la estación de servicio en base de datos asociada a su codigo externo
+			Optional<EstacionDeServicio> eessBD;
+			try {
+				eessBD = servicio.forEESS().findEESSByExtCode(eess.getExtCode());
+			} catch (Exception e) {
+				loggerCron.error(
+						"DB - Error al comprobar si ya existe en la BD la estación de servicio {}.:{}",
+						eess.toString(), e.getMessage(), e);
+				continue;
+			}
+			// Si no se encuentra la estación en BD, persistimos
+			if (eessBD.isEmpty()) {
+				try {
+					EstacionDeServicio eessInsert = servicio.forEESS().addEESS(eess);
+					eess.setId(eessInsert.getId());
+					this.totalEESSInsertadas++;
+				} catch (Exception ex) {
+					loggerCron.error(
+							"DB - Error al persistir la estación de servicio {}.:{}",
+							eess, ex.getMessage(), ex);
+					continue;
+				}
+			} else {
+				EstacionDeServicio eessEnBD = eessBD.get();
+
+				// Actualizamos los datos de la estación si han cambiado TODO
+
+				// Introducimos los precios de la estación
+
+				// Actualizamos la disponibiidadad de combustibles de la estación
+			}
+
+		}
+
 	}
 
-	/**
-	 * Persiste todas las EESS en una única sesión JPA
-	 */
+
 	//	private void persistirBatch(List<ES> listaES) {
 	//		// ===========================
 	//		// Configuración de batch y multihilo
@@ -464,6 +500,42 @@ public class EESSRecolectorJobParser implements Job {
 	//		loggerCron.info("Persistencia multihilo completada. Total estaciones: {}",
 	//						listaES.size());
 	//	}
+
+
+	/**
+	 * Registra el informe de la ejecución del cron en el log y envía el correo con el informe.
+	 */
+	private void finEjecucionCronYRegistroInformeEjecucion() {
+		this.fechaFinEjecucion = LocalDateTime.now();
+		// Registro del resumen en el log
+		String resumenCron = "<<< Resumen ejecución CRON >>>\n" + "Hora de inicio: " +
+				formatoHora(fechaInicioEjecucion) + ", Hora de fin: " +
+				formatoHora(fechaFinEjecucion) + "\n" + "Tiempo total empleado: " +
+				formatoTiempo(tiempoTotalCron) + "\n" +
+				"Total EESS recuperadas en JSON: " + totalEESSEnJson + "\n" +
+				"Total EESS recuperadas en DTO: " + totalEESSEnDTO + "\n" +
+				"Total EESS parseadas correctamente: " + totalEESSParseadas + "\n" +
+				"Total EESS insertadas correctamente: " + totalEESSInsertadas + "\n" +
+				"Tiempo de petición API: " + formatoTiempo(tiempoPeticionApiMs) + "\n" +
+				"Tiempo de parseo JSON -> DTO: " + formatoTiempo(tiempoJSONParseoDTOMs) +
+				"\n" + "Tiempo de parseo DTO -> Entity: " +
+				formatoTiempo(tiempoJSONParseoDTOMs) + "\n" + "Tiempo de persistencia: " +
+				formatoTiempo(tiempoPersistenciaMs) + "\n";
+
+		loggerCron.info(resumenCron);
+
+		//Envio de correo con el informe de la ejecución del
+		// TODO JobEmailSender emailSender = new JobEmailSender();
+
+		// Log indicando la finalización del cron y el estado del envío del correo
+		loggerCron.info(
+				"<<< CRON Finalizado >>> Hora de fin: {}. ¿Se ha enviado el informe por correo? {}.",
+				formatoHora(fechaFinEjecucion), ("No")); // TODO corregir condición
+	}
+
+	/*
+	 * Métodos auxiliares
+	 */
 
 
 	/**
