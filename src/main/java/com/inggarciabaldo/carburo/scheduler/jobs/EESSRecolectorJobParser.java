@@ -3,13 +3,11 @@ package com.inggarciabaldo.carburo.scheduler.jobs;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
-import com.inggarciabaldo.carburo.application.Factorias;
 import com.inggarciabaldo.carburo.application.model.EstacionDeServicio;
 import com.inggarciabaldo.carburo.application.rest.GasStationHttpRequest;
 import com.inggarciabaldo.carburo.application.rest.dto.EETTReqResParserDTO;
 import com.inggarciabaldo.carburo.application.rest.dto.ESParserDTO;
 import com.inggarciabaldo.carburo.application.rest.parser.EETTReqResParser;
-import com.inggarciabaldo.carburo.application.service.ServiceFactory;
 import com.inggarciabaldo.carburo.config.cache.ApplicationCache;
 import com.inggarciabaldo.carburo.config.parser.deserialize.ESParserDTODeserializer;
 import com.inggarciabaldo.carburo.config.persistencia.jdbc.Jdbc;
@@ -23,13 +21,9 @@ import org.slf4j.Logger;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 
 import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.*;
 
@@ -64,20 +58,7 @@ public class EESSRecolectorJobParser implements Job {
 	/**
 	 * Datos de ejecución
 	 */
-	private File jsonRespuestaArchivo;
-	private LocalDateTime fechaInicioEjecucion;
-	private LocalDateTime fechaFinEjecucion;
-	private long tiempoPeticionApiMs;
-	private long tiempoJSONParseoDTOMs;
-	private long tiempoParseoEESSMs;
-	private long tiempoPersistenciaMs;
-	private long tiempoTotalCron;
-	private int totalEESSEnJson = 0;
-	private int totalEESSEnDTO = 0;
-	private int totalEESSParseadas = 0;
-	private int totalEESSInsertadas = 0;
-	private final int totalEESSActualizadas = 0;
-	private final int totalPreciosEESSInsertados = 0;
+	private final DatoDeEjecucion datoDeEjecucion = new DatoDeEjecucion();
 
 	/**
 	 * Job principal que se ejecuta periódicamente.
@@ -105,9 +86,10 @@ public class EESSRecolectorJobParser implements Job {
 	 */
 	@Override
 	public void execute(JobExecutionContext context) {
-		this.fechaInicioEjecucion = LocalDateTime.now();
+		datoDeEjecucion.fechaInicioEjecucion = LocalDateTime.now();
 		loggerCron.info("<<< Activación del CRON >>> Hora de inicio: {}",
-						formatoHora(fechaInicioEjecucion));
+						datoDeEjecucion.formatoHora(
+								datoDeEjecucion.fechaInicioEjecucion));
 
 		long tiempoInicioCron = System.currentTimeMillis();
 
@@ -146,7 +128,7 @@ public class EESSRecolectorJobParser implements Job {
 		} catch (JsonSyntaxException e) {
 			return;
 		}
-		if (this.totalEESSEnDTO == 0) {
+		if (this.datoDeEjecucion.totalEESSEnDTO == 0) {
 			return;
 		}
 
@@ -160,7 +142,8 @@ public class EESSRecolectorJobParser implements Job {
 		 *	  	5.5. Por cada precio parseado, comprobar si ya existe en BD el dato diario, en caso contrario persistir este.
 		 */
 		List<EstacionDeServicio> listadoDeEESSObtenidas = doESDtoParseToES(apiRequestDto);
-		if (listadoDeEESSObtenidas == null || this.totalEESSParseadas == 0) {
+		if (listadoDeEESSObtenidas == null ||
+				this.datoDeEjecucion.totalEESSParseadas == 0) {
 			loggerCron.warn(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
 									"No se parseó ninguna estación correctamente. CRON finalizado.");
 			return;
@@ -168,10 +151,14 @@ public class EESSRecolectorJobParser implements Job {
 
 		// Persistencia
 		{
+			ProcesadoDePersistenciaEESSaBD procesador;
 			loggerCron.info("Comienza la fase de persistencia.");
+			procesador = new ProcesadoDePersistenciaEESSaBD(listadoDeEESSObtenidas,
+															datoDeEjecucion);
+			loggerCron.info("Objeto de procesamiento creado correctamente.");
 			long tiempoInicioPersistencia = System.currentTimeMillis();
-			persistirEnBD(listadoDeEESSObtenidas);
-			this.tiempoPersistenciaMs =
+			procesador.procesar();
+			this.datoDeEjecucion.tiempoPersistenciaMs =
 					System.currentTimeMillis() - tiempoInicioPersistencia;
 		}
 
@@ -181,7 +168,8 @@ public class EESSRecolectorJobParser implements Job {
 		 * 8. Enviar el informe vía email a los administradores del sistema.
 		 * 9. Finalizar la ejecución del cron.
 		 */
-		this.tiempoTotalCron = System.currentTimeMillis() - tiempoInicioCron;
+		this.datoDeEjecucion.tiempoTotalCron =
+				System.currentTimeMillis() - tiempoInicioCron;
 		// Dado que es el fin del ciclo de vida limpiamos cualquier recurso abierto
 		ApplicationCache.instance.clearCache();
 		finEjecucionCronYRegistroInformeEjecucion();
@@ -210,7 +198,8 @@ public class EESSRecolectorJobParser implements Job {
 		JSONObject respuestaAPI;
 		try {
 			respuestaAPI             = request.getAllStations();
-			this.tiempoPeticionApiMs = System.currentTimeMillis() - inicioPeticion;
+			this.datoDeEjecucion.tiempoPeticionApiMs =
+					System.currentTimeMillis() - inicioPeticion;
 		} catch (Exception e) {
 			loggerCron.error(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
 									 "Error al obtener JSON de estaciones: {}",
@@ -224,7 +213,8 @@ public class EESSRecolectorJobParser implements Job {
 				respuestaAPI.getString(API_KEY_RESP_RES_CONSULTA)
 						.equals(API_KEY_RESP_RES_CONSULTA_OK) &&
 				respuestaAPI.keySet().contains(API_KEY_RESP_LISTADO_EESS)) {
-			this.totalEESSEnJson = respuestaAPI.getJSONArray(API_KEY_RESP_LISTADO_EESS)
+			this.datoDeEjecucion.totalEESSEnJson = respuestaAPI.getJSONArray(
+							API_KEY_RESP_LISTADO_EESS)
 					.length();
 			guardarRespuestaAPIEnArchivo(respuestaAPI);
 			return respuestaAPI;
@@ -251,9 +241,11 @@ public class EESSRecolectorJobParser implements Job {
 		// Mapear JSON a DTO
 		EETTReqResParserDTO dto = gson.fromJson(jsonRespuestaAPI.toString(),
 												EETTReqResParserDTO.class);
-		this.tiempoJSONParseoDTOMs = System.currentTimeMillis() - tiempoInicioEjecucion;
-		this.totalEESSEnDTO        = dto.getListaEESS().size();
-		if (totalEESSEnDTO == 0) loggerCron.warn(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
+		this.datoDeEjecucion.tiempoJSONParseoDTOMs =
+				System.currentTimeMillis() - tiempoInicioEjecucion;
+		this.datoDeEjecucion.totalEESSEnDTO        = dto.getListaEESS().size();
+		if (this.datoDeEjecucion.totalEESSEnDTO == 0) loggerCron.warn(
+				LOG_ETIQUETA_INICIAL_CRON_ANULADO +
 														 "No se transformado ninguna estación a DTO. CRON finalizado.");
 		return dto;
 	}
@@ -270,11 +262,12 @@ public class EESSRecolectorJobParser implements Job {
 		List<EstacionDeServicio> estacionesDeServicioParseadas = null;
 		// Instanciamos el parser y lanzamos el parseo
 		try {
-			EETTReqResParser parser = new EETTReqResParser(apiRequestDto);
+			EETTReqResParser parser = new EETTReqResParser(apiRequestDto,
+														   datoDeEjecucion);
 			{ //Medimos tiempos
 				long tiempoInicioParseo = System.currentTimeMillis();
 				estacionesDeServicioParseadas = parser.parse();
-				this.tiempoParseoEESSMs       =
+				this.datoDeEjecucion.tiempoParseoEESSMs =
 						System.currentTimeMillis() - tiempoInicioParseo;
 			}
 		} catch (IllegalArgumentException | IllegalStateException e) {
@@ -286,7 +279,7 @@ public class EESSRecolectorJobParser implements Job {
 									 "Ha ocurrido un error inesperado en el parseo de las EESS: {}",
 							 e.getMessage(), e);
 		}
-		this.totalEESSParseadas = (estacionesDeServicioParseadas ==
+		this.datoDeEjecucion.totalEESSParseadas = (estacionesDeServicioParseadas ==
 										   null) ? 0 : estacionesDeServicioParseadas.size();
 		return estacionesDeServicioParseadas;
 	}
@@ -311,7 +304,7 @@ public class EESSRecolectorJobParser implements Job {
 
 		if (rutaDirectorio.isEmpty()) {
 			// Si no hay ruta, guardamos en el directorio actual
-			jsonRespuestaArchivo = new File(nombreArchivo);
+			this.datoDeEjecucion.jsonRespuestaArchivo = new File(nombreArchivo);
 		} else {
 			// Si hay ruta, nos aseguramos que exista la carpeta
 			File carpeta = new File(rutaDirectorio);
@@ -334,15 +327,16 @@ public class EESSRecolectorJobParser implements Job {
 								rutaDirectorio);
 				return;
 			}
-			jsonRespuestaArchivo = new File(carpeta, nombreArchivo);
+			this.datoDeEjecucion.jsonRespuestaArchivo = new File(carpeta, nombreArchivo);
 		}
 
 
-		try (FileWriter writer = new FileWriter(jsonRespuestaArchivo)) {
+		try (FileWriter writer = new FileWriter(
+				this.datoDeEjecucion.jsonRespuestaArchivo)) {
 			writer.write(jsonRespuestaAPI.toString(4)); // identación de 4 espacios
 			loggerCron.info(
 					"Almacenada respuesta de la API en la ubicación designada. Bajo el nombre: {}",
-					jsonRespuestaArchivo.getName());
+					this.datoDeEjecucion.jsonRespuestaArchivo.getName());
 		} catch (IOException e) {
 			loggerCron.error(LOG_ETIQUETA_INICIAL_FALLO_GUARDADO_JSON_FILE +
 									 "Error al guardar la respuesta de la API en archivo: {}",
@@ -351,178 +345,13 @@ public class EESSRecolectorJobParser implements Job {
 	}
 
 	/**
-	 * Este metodo se encargará de comparar aquellas estaciones de servicio parseadas,
-	 * actualmente introducidas por parámetro con las ya existentes en la base de datos.
-	 * Si no existe la estación de servicio, se persistirá. Si ya existe, se comprobará si
-	 * alguno de sus datos ha cambiado y en caso afirmativo se actualizará.
-	 <p>
-	 * A parte, comprobará los precios de cada estación de servicio y, si no existen en la base de datos, los persistirá. En caso de que existan, comprobará si han cambiado y los actualizará en caso afirmativo.
-	 * Hará lo correspondiente con la disponibilidad de cada estación de servicio.
-	 *
-	 * @param estacionDeServicios @{@link Collection} de estaciones de servicio parseadas a persistir
-	 */
-	private void persistirEnBD(Collection<EstacionDeServicio> estacionDeServicios) {
-		// Comprobaciones
-		if (estacionDeServicios == null) throw new IllegalArgumentException(
-				"No se puede persistir estaciones de servicios ya que la colección introducida es nula.");
-		if (estacionDeServicios.isEmpty()) {
-			loggerCron.warn(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
-									"La lista de estaciones de servicio recibida para persistir está vacía.");
-			return;
-		}
-
-
-		ServiceFactory servicio = Factorias.service;
-
-		// Ordenamos las estaciones por su extCode o id
-		Collection<EstacionDeServicio> estacionDeServiciosSorted = estacionDeServicios.stream()
-				.sorted(Comparator.comparing(EstacionDeServicio::getExtCode)).toList();
-
-		for (EstacionDeServicio eess : estacionDeServiciosSorted) {
-			// Obtenemos la estación de servicio en base de datos asociada a su codigo externo
-			Optional<EstacionDeServicio> eessBD;
-			try {
-				eessBD = servicio.forEESS().findEESSByExtCode(eess.getExtCode());
-			} catch (Exception e) {
-				loggerCron.error(
-						"DB - Error al comprobar si ya existe en la BD la estación de servicio {}.:{}",
-						eess.toString(), e.getMessage(), e);
-				continue;
-			}
-			// Si no se encuentra la estación en BD, persistimos
-			if (eessBD.isEmpty()) {
-				try {
-					EstacionDeServicio eessInsert = servicio.forEESS().addEESS(eess);
-					eess.setId(eessInsert.getId());
-					this.totalEESSInsertadas++;
-				} catch (Exception ex) {
-					loggerCron.error(
-							"DB - Error al persistir la estación de servicio {}.:{}",
-							eess, ex.getMessage(), ex);
-					continue;
-				}
-			} else {
-				EstacionDeServicio eessEnBD = eessBD.get();
-
-				// Actualizamos los datos de la estación si han cambiado TODO
-
-				// Introducimos los precios de la estación
-
-				// Actualizamos la disponibiidadad de combustibles de la estación
-			}
-
-		}
-
-	}
-
-
-	//	private void persistirBatch(List<ES> listaES) {
-	//		// ===========================
-	//		// Configuración de batch y multihilo
-	//		// ===========================
-	//		int numHilos = 4;       // número de hilos concurrentes, seguro para Supabase/Postgres
-	//		int batchSize = 100;    // flush/clear cada 100 entidades
-	//		int chunkSize = 200;    // tamaño de cada chunk que procesa un hilo
-	//
-	//		ExecutorService executor = Executors.newFixedThreadPool(numHilos);
-	//		List<Future<?>> futures = new ArrayList<>();
-	//
-	//		// ===========================
-	//		// Dividir la lista en chunks
-	//		// ===========================
-	//		for (int i = 0; i < listaES.size(); i += chunkSize) {
-	//			int from = i;
-	//			int to = Math.min(i + chunkSize, listaES.size());
-	//			// Crear copia para evitar problemas con subList concurrente
-	//			List<ES> chunk = new ArrayList<>(listaES.subList(from, to));
-	//
-	//			// ===========================
-	//			// Procesar cada chunk en un hilo
-	//			// ===========================
-	//			futures.add(executor.submit(() -> {
-	//				EntityManager em = JPAUtil.getEntityManager();
-	//				EntityTransaction tx = null;
-	//
-	//				try {
-	//					tx = em.getTransaction();
-	//					tx.begin();
-	//					int count = 0;
-	//
-	//					for (ES ES : chunk) {
-	//						// Persistir o actualizar según corresponda
-	//						if (ES.getId() == null) {
-	//							em.persist(ES);
-	//						} else {
-	//							em.merge(ES);
-	//						}
-	//
-	//						// Flush y clear por batch
-	//						if (++count % batchSize == 0) {
-	//							em.flush();
-	//							em.clear(); // cuidado: relaciones desasociadas
-	//						}
-	//
-	//						// Opcional: persistencia de precios si se requiere
-	//						// for (PrecioCombustible precio : eess.getPrecios()) {
-	//						//     if (precio.getId() == null) em.persist(precio);
-	//						//     else em.merge(precio);
-	//						// }
-	//					}
-	//
-	//					tx.commit();
-	//					loggerCron.info(
-	//							"Chunk persistido correctamente. Estaciones procesadas en este hilo: {}",
-	//							chunk.size());
-	//
-	//				} catch (Exception e) {
-	//					if (tx != null && tx.isActive()) tx.rollback();
-	//					loggerCron.error("Error persistiendo chunk. Transacción abortada: {}",
-	//									 e.getMessage(), e);
-	//
-	//				} finally {
-	//					if (em.isOpen()) em.close(); // cierre seguro del EntityManager
-	//				}
-	//			}));
-	//		}
-	//
-	//		// ===========================
-	//		// Esperar a que todos los hilos terminen
-	//		// ===========================
-	//		for (Future<?> f : futures) {
-	//			try {
-	//				f.get(); // bloquea hasta que termine cada hilo
-	//			} catch (InterruptedException | ExecutionException e) {
-	//				loggerCron.error("Error en hilo de persistencia: {}", e.getMessage(), e);
-	//			}
-	//		}
-	//
-	//		executor.shutdown();
-	//		loggerCron.info("Persistencia multihilo completada. Total estaciones: {}",
-	//						listaES.size());
-	//	}
-
-
-	/**
 	 * Registra el informe de la ejecución del cron en el log y envía el correo con el informe.
 	 */
 	private void finEjecucionCronYRegistroInformeEjecucion() {
-		this.fechaFinEjecucion = LocalDateTime.now();
-		// Registro del resumen en el log
-		String resumenCron = "<<< Resumen ejecución CRON >>>\n" + "Hora de inicio: " +
-				formatoHora(fechaInicioEjecucion) + ", Hora de fin: " +
-				formatoHora(fechaFinEjecucion) + "\n" + "Tiempo total empleado: " +
-				formatoTiempo(tiempoTotalCron) + "\n" +
-				"Total EESS recuperadas en JSON: " + totalEESSEnJson + "\n" +
-				"Total EESS recuperadas en DTO: " + totalEESSEnDTO + "\n" +
-				"Total EESS parseadas correctamente: " + totalEESSParseadas + "\n" +
-				"Total EESS insertadas correctamente: " + totalEESSInsertadas + "\n" +
-				"Tiempo de petición API: " + formatoTiempo(tiempoPeticionApiMs) + "\n" +
-				"Tiempo de parseo JSON -> DTO: " + formatoTiempo(tiempoJSONParseoDTOMs) +
-				"\n" + "Tiempo de parseo DTO -> Entity: " +
-				formatoTiempo(tiempoJSONParseoDTOMs) + "\n" + "Tiempo de persistencia: " +
-				formatoTiempo(tiempoPersistenciaMs) + "\n";
+		this.datoDeEjecucion.fechaFinEjecucion = LocalDateTime.now();
 
-		loggerCron.info(resumenCron);
+		// Registro del resumen en el log
+		loggerCron.info(this.datoDeEjecucion.getInformeEjecucion());
 
 		//Envio de correo con el informe de la ejecución del
 		// TODO JobEmailSender emailSender = new JobEmailSender();
@@ -530,29 +359,7 @@ public class EESSRecolectorJobParser implements Job {
 		// Log indicando la finalización del cron y el estado del envío del correo
 		loggerCron.info(
 				"<<< CRON Finalizado >>> Hora de fin: {}. ¿Se ha enviado el informe por correo? {}.",
-				formatoHora(fechaFinEjecucion), ("No")); // TODO corregir condición
-	}
-
-	/*
-	 * Métodos auxiliares
-	 */
-
-
-	/**
-	 * Formatea milisegundos a minutos y segundos legibles
-	 */
-	private String formatoTiempo(long millis) {
-		Duration duration = Duration.ofMillis(millis);
-		long minutos = duration.toMinutes();
-		long segundos = duration.minusMinutes(minutos).getSeconds();
-		long milisegundos = millis % 1000;
-		return String.format("%dm %ds %dms", minutos, segundos, milisegundos);
-	}
-
-	/**
-	 * Formatea hora legible
-	 */
-	private String formatoHora(LocalDateTime fecha) {
-		return fecha.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+				datoDeEjecucion.formatoHora(this.datoDeEjecucion.fechaFinEjecucion),
+				("No")); // TODO corregir condición
 	}
 }

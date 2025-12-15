@@ -42,7 +42,7 @@ public class PreciosCombustibleParser {
 	 *
 	 * @param item  PreciosCarburanteParserDTO de la estación
 	 * @param fecha Fecha de los precios
-	 * @return Set<PrecioCombustible> Conjunto de objetos @{@link PrecioCombustible} parseados.
+	 * @return Set<PrecioCombustible> Conjunto de objetos {@link PrecioCombustible} parseados.
 	 */
 	public Set<PrecioCombustible> parsePrecioCombustibleEESS(
 			PreciosCombustibleParserDTO item, EstacionDeServicio estacion,
@@ -67,7 +67,7 @@ public class PreciosCombustibleParser {
 			} catch (IllegalArgumentException e) {
 				parseLog.error("No se ha podido parsear el precio del combustible {} " +
 									   "para la EESS id {} en la fecha {}. Se omite este precio.",
-							   c.getDenominacion(), estacion.getId(), fecha);
+							   c.getDenominacion(), estacion.getId(), fecha, e);
 				continue;
 			}
 			salidaPrecios.add(precioCombustible);

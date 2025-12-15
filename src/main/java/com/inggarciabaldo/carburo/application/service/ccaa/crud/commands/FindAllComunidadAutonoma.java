@@ -24,7 +24,7 @@ public class FindAllComunidadAutonoma implements Command<List<ComunidadAutonoma>
 		CCAAGateway mg = Factorias.persistence.forCCAA();
 		List<CCAARecord> list = mg.findAll();
 		List<ComunidadAutonoma> lista = EntityAssembler.toEntityList(list);
-		Loggers.DB.info("Se han cargado todas las CCAA de la BD. Total: {}", list.size());
+		Loggers.DB.info("CARGADAS todas las CCAA de la BD. Total: {}", list.size());
 		// Lo añado a la caché
 		ApplicationCache.instance.addCCAAs(lista);
 		return lista;

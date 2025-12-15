@@ -12,6 +12,8 @@ import java.util.Optional;
 
 public class EntityAssembler {
 
+	private EntityAssembler() {}
+
 	public static List<Provincia> toEntityList(List<ProvinciaRecord> list) {
 		return list.stream().map(EntityAssembler::toEntity).toList();
 	}

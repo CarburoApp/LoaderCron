@@ -26,7 +26,7 @@ public class Factorias {
 	 * componentes relacionados con la gestión de datos
 	 * (base de datos, ficheros, etc.).
 	 */
-	public static PersistenceFactory persistence = new PersistenceFactory();
+	public static final PersistenceFactory persistence = new PersistenceFactory();
 
 	/**
 	 * Factoría de utilidades para la obtención de enums a partir de códigos.
@@ -35,7 +35,7 @@ public class Factorias {
 	 * para cada enumerado del dominio, centralizando la lógica
 	 * de conversión y validación.
 	 */
-	public static EnumFromCodeFactoryInterface enumFromCode = new EnumFromCodeFactory();
+	public static final EnumFromCodeFactoryInterface enumFromCode = new EnumFromCodeFactory();
 
 	/**
 	 * Factoría encargada de la capa de servicios.
@@ -43,5 +43,5 @@ public class Factorias {
 	 * Proporciona acceso a los distintos servicios
 	 * que implementan la lógica de negocio de la aplicación.
 	 */
-	public static ServiceFactory service = new ServiceFactory();
+	public static final ServiceFactory service = new ServiceFactory();
 }

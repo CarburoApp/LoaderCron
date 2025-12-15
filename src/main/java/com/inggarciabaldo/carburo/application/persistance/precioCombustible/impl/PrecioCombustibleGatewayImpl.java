@@ -6,6 +6,7 @@ import com.inggarciabaldo.carburo.config.persistencia.jdbc.Jdbc;
 import com.inggarciabaldo.carburo.util.properties.PropertyLoader;
 
 import java.sql.*;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,21 +19,21 @@ public class PrecioCombustibleGatewayImpl implements PrecioCombustibleGateway {
 	 * Cargador de propiedades para obtener consultas SQL
 	 * desde los archivos .properties.
 	 */
-	private final static PropertyLoader propertyLoader = PropertyLoader.getInstance();
+	private static final PropertyLoader propertyLoader = PropertyLoader.getInstance();
 
 	/**
 	 * Sufijos para identificar las consultas
 	 */
-	private final static String ADD_KEY = "ADD";
-	private final static String UPDATE_KEY = "UPDATE";
-	private final static String REMOVE_KEY = "REMOVE";
-	private final static String FIND_ALL_KEY = "FINDALL";
-	private final static String FIND_ID_KEY = "FINDBYID";
-	private final static String FIND_BY_KEY = "FINDBY";
+	private static final String ADD_KEY = "ADD";
+	private static final String UPDATE_KEY = "UPDATE";
+	private static final String REMOVE_KEY = "REMOVE";
+	private static final String FIND_ALL_KEY = "FINDALL";
+	private static final String FIND_ID_KEY = "FINDBYID";
+	private static final String FIND_BY_KEY = "FINDBY";
 
-	private final static String FIND_FECHA_KEY = "FECHA";
-	private final static String FIND_EESS_KEY = "EESS";
-	private final static String FIND_COMBUSTIBLE_KEY = "COMBUSTIBLE";
+	private static final String FIND_FECHA_KEY = "FECHA";
+	private static final String FIND_EESS_KEY = "EESS";
+	private static final String FIND_COMBUSTIBLE_KEY = "COMBUSTIBLE";
 
 	private String getQuery(String operation) {
 		String key = PRECIOCOMBUSTIBLE_TABLE + "_" + operation;
@@ -59,6 +60,33 @@ public class PrecioCombustibleGatewayImpl implements PrecioCombustibleGateway {
 		} catch (SQLException e) {
 			throw new PersistenceException(e);
 		}
+	}
+
+	/**
+	 * Inserta masivamente una colección de nuevos registro de precio de combustible.
+	 *
+	 * @param coleccionPreciosCombustibles colección de registros a insertar
+	 * @throws PersistenceException si ocurre un error de persistencia
+	 */
+	@Override
+	public int addAll(Collection<PrecioCombustibleRecord> coleccionPreciosCombustibles) {
+		int elementosInsertados = 0;
+		try {
+			Connection c = Jdbc.getCurrentConnection();
+			String sql = getQuery(ADD_KEY);
+			for (PrecioCombustibleRecord record : coleccionPreciosCombustibles)
+				try (PreparedStatement pst = c.prepareStatement(sql)) {
+					pst.setShort(1, record.idCombustible);
+					pst.setInt(2, record.idEess);
+					pst.setDate(3, record.fecha);
+					pst.setDouble(4, record.precio);
+					pst.executeUpdate();
+					elementosInsertados++;
+				}
+		} catch (SQLException e) {
+			throw new PersistenceException(e);
+		}
+		return elementosInsertados;
 	}
 
 	@Override

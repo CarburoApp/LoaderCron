@@ -13,6 +13,8 @@ import java.util.Optional;
 
 public class EntityAssembler {
 
+	private EntityAssembler() {}
+
 	public static List<Municipio> toEntityList(List<MunicipioRecord> list) {
 		return list.stream().map(EntityAssembler::toEntity).toList();
 	}

@@ -26,7 +26,7 @@ public class Jdbc {
 	/**
 	 * Instancia singleton del cargador de propiedades de la aplicación
 	 */
-	private final static PropertyLoader config = PropertyLoader.getInstance();
+	private static final PropertyLoader config = PropertyLoader.getInstance();
 
 	/**
 	 * Clave de la propiedad que contiene la URL de la base de datos

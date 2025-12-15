@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.function.Function;
 
 public class EstractorPreciosPorCodigo {
+
+	private EstractorPreciosPorCodigo() {}
+
 	public static final Map<String, Function<PreciosCombustibleParserDTO, String>> PRECIO_EXTRACTORS = Map.ofEntries(
 
 			// ==== GASOLINAS ====

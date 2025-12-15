@@ -5,8 +5,10 @@ import com.inggarciabaldo.carburo.application.model.EstacionDeServicio;
 import com.inggarciabaldo.carburo.application.rest.dto.EETTReqResParserDTO;
 import com.inggarciabaldo.carburo.application.rest.dto.ESParserDTO;
 import com.inggarciabaldo.carburo.application.service.ServiceFactory;
+import com.inggarciabaldo.carburo.scheduler.jobs.DatoDeEjecucion;
 import com.inggarciabaldo.carburo.util.log.Loggers;
 import com.inggarciabaldo.carburo.util.properties.PropertyLoader;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 
 import java.time.LocalDate;
@@ -20,14 +22,14 @@ import java.util.List;
 
 /**
  * Clase de alto nivel para parsear la petición a la api, actualmente introducida en el
- * DTO @{@link EETTReqResParserDTO}. A continuación
+ * DTO {@link EETTReqResParserDTO}. A continuación
  * se procesará para obtener las estaciones de servicio (EESS) y sus precios correspondientes.
  * <p>
  * Este proceso de parseo tiene el uso principal de convertir los actuales DTOs en entidades
  * correctas para posteriormente compararlas y persistirlas en la base de datos.
  * <p>
  * El primer paso será parsear los datos de primer nivel del DTO/JSON recibido.
- * El segundo paso será utilizar la clase @{@link EESSParser} para parsear cada estación de servicio.
+ * El segundo paso será utilizar la clase {@link EESSParser} para parsear cada estación de servicio.
  */
 public class EETTReqResParser {
 
@@ -52,26 +54,16 @@ public class EETTReqResParser {
 	 */
 	private final LocalDate fechaDeParser;
 	private final EETTReqResParserDTO dto;
-	private long tiempoCargaDatosInicialesCache;
-	private long tiempoDTOParseoEnEntidadesMs;
-	private long tiempoPersistenciaMs;
-	private long tiempoTotalCron;
-	private int totalEESSParseadasCorrectamente;
-	private int totalErroresParseEESS = 0;
-	private int totalEESSEnJson;
-	private int totalEESSEnDTO;
-	private int totalEESSParseadas;
-	private int totalEESSInsertadas;
-	private int totalEESSActualizadas;
-	private int totalPreciosEESSInsertados;
+	private final DatoDeEjecucion datoDeEjecucion;
 
 	/**
 	 * Constructor del parser, que recibe el DTO ya deserializado.
 	 *
 	 * @param dto DTO recibido de la API ya deserializado.
+	 * @param datoDeEjecucion Datos de ejecución del cron actual.
 	 * @throws IllegalArgumentException Si el DTO es nulo o no contiene datos válidos.
 	 */
-	public EETTReqResParser(EETTReqResParserDTO dto) {
+	public EETTReqResParser(EETTReqResParserDTO dto, DatoDeEjecucion datoDeEjecucion) {
 		loggerParse.info(ETIQUETA_LOGGER +
 								 "Inicializando el parser de EETTReqResParser para el DTO recibido.");
 		if (dto == null) {
@@ -81,6 +73,8 @@ public class EETTReqResParser {
 		}
 
 		this.dto = dto;
+
+		this.datoDeEjecucion = datoDeEjecucion;
 
 		this.fechaDeParser = parseFecha();
 		// Comprobar que la fecha es el mismo día que hoy
@@ -103,12 +97,14 @@ public class EETTReqResParser {
 			loggerParse.error(ETIQUETA_LOGGER +
 									  "Error en el paseo de los datos de primer nivel del DTO/JSON recibido: {}",
 							  e.getMessage(), e);
-			throw new IllegalStateException(e);
+			throw new IllegalStateException(
+					"Error en el paseo de los datos de primer nivel del DTO/JSON recibido: {}",
+					e);
 		}
 	}
 
 	/**
-	 * Extrae la fecha del DTO. A parte de comprobar su validez debe de ser tranformada a @{@link LocalDate}.
+	 * Extrae la fecha del DTO. A parte de comprobar su validez debe de ser tranformada a {@link LocalDate}.
 	 *
 	 * @throws IllegalArgumentException Si no está presente o no tiene un formato válido.
 	 */
@@ -137,7 +133,7 @@ public class EETTReqResParser {
 	}
 
 	/**
-	 * Extrae la fecha del DTO. A parte de comprobar su validez debe de ser tranformada a @{@link LocalDate}.
+	 *
 	 *
 	 * @throws IllegalArgumentException Si no está presente o no tiene un formato válido.
 	 */
@@ -179,28 +175,27 @@ public class EETTReqResParser {
 										  " Ha ocurrido un error al parsear la estación de servicio - Se ignora: {}",
 								  estacionDeServicioDTO.toString(), e);
 				conFallos.add(estacionDeServicioDTO);
-				this.totalErroresParseEESS++;
 				continue;
 			} catch (Exception e) {
 				loggerParse.error(ETIQUETA_LOGGER +
 										  " Ha ocurrido un error inesperado al parsear la estación de servicio - Se ignora: {}",
 								  estacionDeServicioDTO.toString(), e);
 				conFallos.add(estacionDeServicioDTO);
-				this.totalErroresParseEESS++;
 				continue;
 			}
 			if (estacionDeServicio != null) resultado.add(estacionDeServicio);
 		}
 
-		this.tiempoDTOParseoEnEntidadesMs =
-				System.currentTimeMillis() - inicioParseoEESSMs;
+		datoDeEjecucion.setTiempoDTOParseoEntidades(
+				System.currentTimeMillis() - inicioParseoEESSMs);
 
-		this.totalEESSParseadasCorrectamente = resultado.size();
+		datoDeEjecucion.setTotalEESSParseadas(resultado.size());
+		datoDeEjecucion.setTotalEESSNoParseadasConErrores(conFallos.size());
 
 		loggerParse.info(ETIQUETA_LOGGER +
 								 "Fin de parseo del DTO recibido. Se han parseado correctamente {} EESS de las {} indicadas en el DTO inicial. Con errores: {}.",
-						 this.totalEESSParseadasCorrectamente, listaEESS.size(),
-						 this.totalErroresParseEESS);
+						 datoDeEjecucion.getTotalEESSParseadas(), listaEESS.size(),
+						 datoDeEjecucion.getTotalEESSNoParseadasConErrores());
 		return resultado;
 	}
 
@@ -239,11 +234,11 @@ public class EETTReqResParser {
 		serviceFactory.forProvincia().findAllProvincias();     // provincias
 		serviceFactory.forMunicipio().findAllMunicipios();     // municipios
 
-		this.tiempoCargaDatosInicialesCache =
-				System.currentTimeMillis() - tiempoCargaDatosInicialesCacheInicio;
+		datoDeEjecucion.setTiempoCargaDatosInicialesCache(
+				System.currentTimeMillis() - tiempoCargaDatosInicialesCacheInicio);
 		loggerParse.info(
-				ETIQUETA_LOGGER + "Cargados los datos en caché. Tiempo empleado: {} ms.",
-				this.tiempoCargaDatosInicialesCache);
+				ETIQUETA_LOGGER + "CARGADOS los datos en CACHÉ. Tiempo empleado: {} ms.",
+				datoDeEjecucion.getTiempoCargaDatosInicialesCache());
 	}
 
 	/**
@@ -269,101 +264,4 @@ public class EETTReqResParser {
 			return null;
 		}
 	}
-
-
-	/**
-	 * Método principal que procesa un JSON completo de EESS.
-	 *
-	 * @param json JSON recibido de la API con lista de EESS y fecha de precios
-	 * @return Lista de EESS parseadas
-	 */
-	//	public List<ES> parseAll(JSONObject json) { TODO
-	//		List<ES> resultado = new ArrayList<>();
-	//		List<JSONObject> fallidos = new ArrayList<>();
-	//
-	//		LocalDate fecha = parseFecha(json);
-	//		JSONArray listaEESS = json.optJSONArray(
-	//				propertyLoader.getJsonKeyProperty("lista.eess.precio"));
-	//		if (listaEESS == null) return resultado;
-	//
-	//		int totalItems = listaEESS.length();
-	//		parseLog.info("<<< Inicio del parseado de EESS >>> Total: {}", totalItems);
-	//
-	//		// Crear pool de hilos seguro
-	//		int numHilos = Math.min(Runtime.getRuntime().availableProcessors(),
-	//								Integer.parseInt(propertyLoader.getApplicationProperty(
-	//										"parser.max.threads")));
-	//
-	//		ExecutorService executor = Executors.newFixedThreadPool(numHilos);
-	//
-	//		//		try {
-	//		//			List<CompletableFuture<Void>> futures = new ArrayList<>();
-	//		//
-	//		//			for (int i = 0; i < totalItems; i++) {
-	//		//				final int index = i;
-	//		//				final JSONObject item = listaEESS.getJSONObject(i);
-	//		//
-	//		//				CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-	//		//					try {
-	//		//						ES ES = eessParser.parse(item, fecha);
-	//		//						if (ES != null) {
-	//		//							synchronized (resultado) {
-	//		//								resultado.add(ES);
-	//		//							}
-	//		//						}
-	//		//					} catch (Exception e) {
-	//		//						synchronized (fallidos) {
-	//		//							fallidos.add(item);
-	//		//						}
-	//		//						parseLog.error("Error al parsear estación json {}: {}",
-	//		//									   item.toString(), e.getMessage(), e);
-	//		//					}
-	//		//				}, executor);
-	//		//
-	//		//				futures.add(future);
-	//		//			}
-	//		//
-	//		//			// Esperar que todos terminen
-	//		//			CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-	//		//
-	//		//		} finally {
-	//		//			// Cerrar correctamente los hilos
-	//		//			executor.shutdown();
-	//		//			try {
-	//		//				if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-	//		//					executor.shutdownNow();
-	//		//				}
-	//		//			} catch (InterruptedException e) {
-	//		//				executor.shutdownNow();
-	//		//				Thread.currentThread().interrupt();
-	//		//			}
-	//		//		}
-	//
-	//		// Resumen final
-	//		int parseados = resultado.size();
-	//		int fallidas = fallidos.size();
-	//		double porcentajeFallidas = totalItems > 0 ? (fallidas * 100.0 / totalItems) : 0;
-	//
-	//		StringBuilder resumen = new StringBuilder();
-	//		resumen.append("===== RESUMEN Parser EESS =====\n").append("Total EESS en JSON: ")
-	//				.append(totalItems).append("\n").append("Parseadas correctamente: ")
-	//				.append(parseados).append("\n").append("Fallidas: ").append(fallidas)
-	//				.append(" (").append(String.format("%.2f", porcentajeFallidas))
-	//				.append("%)\n").append("Número de hilos usados: ").append(numHilos)
-	//				.append("\n");
-	//
-	//		if (!fallidos.isEmpty()) {
-	//			resumen.append("JSON de EESS que fallaron al parsear:\n");
-	//			for (JSONObject fallo : fallidos) {
-	//				resumen.append(fallo.toString()).append("\n");
-	//			}
-	//		}
-	//
-	//		resumen.append("===============================\n");
-	//		loggerParse.info(resumen.toString());
-	//
-	//		return resultado;
-	//	}
-
-
 }

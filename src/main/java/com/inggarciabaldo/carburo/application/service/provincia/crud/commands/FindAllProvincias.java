@@ -25,7 +25,7 @@ public class FindAllProvincias implements Command<List<Provincia>> {
 		ProvinciaGateway mg = Factorias.persistence.forProvincia();
 		List<ProvinciaRecord> list = mg.findAll();
 		List<Provincia> lista = EntityAssembler.toEntityList(list);
-		Loggers.DB.info("Se han cargado todas las Provincias de la BD. Total: {}",
+		Loggers.DB.info("CARGADAS todas las Provincias de la BD. Total: {}",
 						list.size());
 		// Lo añado a la caché
 		ApplicationCache.instance.addProvincias(lista);

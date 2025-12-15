@@ -1,7 +1,9 @@
 package com.inggarciabaldo.carburo.application.persistance.precioCombustible;
 
 import com.inggarciabaldo.carburo.application.persistance.PersistenceException;
+import com.inggarciabaldo.carburo.application.persistance.eess.EESSGateway.EESSRecord;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +22,14 @@ public interface PrecioCombustibleGateway {
 	 * @throws PersistenceException si ocurre un error de persistencia
 	 */
 	void add(PrecioCombustibleRecord precioCombustible) throws PersistenceException;
+
+	/**
+	 * Inserta masivamente una colección de nuevos registro de precio de combustible.
+	 *
+	 * @param coleccionPreciosCombustibles colección de registros a insertar
+	 * @throws PersistenceException si ocurre un error de persistencia
+	 */
+	int addAll(Collection<PrecioCombustibleRecord> coleccionPreciosCombustibles);
 
 	/**
 	 * Actualiza un registro existente de precio de combustible

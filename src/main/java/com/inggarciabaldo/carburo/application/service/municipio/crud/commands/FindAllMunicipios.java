@@ -24,7 +24,7 @@ public class FindAllMunicipios implements Command<List<Municipio>> {
 		MunicipioGateway mg = Factorias.persistence.forMunicipio();
 		List<MunicipioRecord> list = mg.findAll();
 		List<Municipio> lista = EntityAssembler.toEntityList(list);
-		Loggers.DB.info("Se han cargado todos los Municipios de la BD. Total: {}",
+		Loggers.DB.info("CARGADOS todos los Municipios de la BD. Total: {}",
 						list.size());
 		// Lo añado a la caché
 		ApplicationCache.instance.addMuncipios(lista);

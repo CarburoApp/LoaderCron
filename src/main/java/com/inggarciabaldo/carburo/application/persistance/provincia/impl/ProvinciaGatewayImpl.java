@@ -44,6 +44,9 @@ public class ProvinciaGatewayImpl extends AbstractGatewayImpl<ProvinciaRecord>
 	@Override
 	protected Optional<ProvinciaRecord> doFindByIdTransformToElement(ResultSet rs)
 			throws SQLException {
+		if (!rs.next()) {
+			return Optional.empty();
+		}
 		return Optional.of(RecordAssembler.toProvinciaRecord(rs));
 	}
 }

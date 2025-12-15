@@ -36,7 +36,7 @@ public class ApplicationCache {
 	private final Logger logger = Loggers.DB;
 
 	// Patrón Singleton para evitar múltiples instancias que consuman memoria innecesariamente
-	public static ApplicationCache instance = new ApplicationCache();
+	public static final ApplicationCache instance = new ApplicationCache();
 
 	private ApplicationCache() {} // Constructor privado para evitar instanciación externa
 
@@ -47,19 +47,19 @@ public class ApplicationCache {
 	 * - Provincias :: Definido como un Map para permitir búsquedas rápidas por ID.
 	 * - Municipios :: Definido como un Map para permitir búsquedas rápidas por ID.
 	 */
-	private final Set<Combustible> _tiposDeCombustible = new HashSet<>();
-	private final Map<Short, ComunidadAutonoma> _comunidadesAutonomas = new HashMap<>();
-	private final Map<Short, Provincia> _provincias = new HashMap<>();
-	private final Map<Short, Municipio> _municipios = new HashMap<>();
+	private final Set<Combustible> tiposDeCombustible = new HashSet<>();
+	private final Map<Short, ComunidadAutonoma> comunidadesAutonomas = new HashMap<>();
+	private final Map<Short, Provincia> provincias = new HashMap<>();
+	private final Map<Short, Municipio> municipios = new HashMap<>();
 
 	/**
 	 * Limpia la caché de la aplicación, eliminando todos los datos almacenados.
 	 */
 	public void clearCache() {
-		this._tiposDeCombustible.clear();
-		this._comunidadesAutonomas.clear();
-		this._provincias.clear();
-		this._municipios.clear();
+		this.tiposDeCombustible.clear();
+		this.comunidadesAutonomas.clear();
+		this.provincias.clear();
+		this.municipios.clear();
 		logger.info(LOG_ETIQUETA_CACHE + "Se ha limpiado la caché.");
 	}
 
@@ -73,7 +73,7 @@ public class ApplicationCache {
 	 * @return Set inmutable de tipos de combustible.
 	 */
 	public Set<Combustible> getTiposDeCombustible() {
-		return Set.copyOf(_tiposDeCombustible);
+		return Set.copyOf(tiposDeCombustible);
 	}
 
 	/**
@@ -85,7 +85,7 @@ public class ApplicationCache {
 		for (Combustible combustible : combustibles)
 			if (combustible == null) throw new IllegalArgumentException(
 					"No se pueden añadir Combustibles nulas a la caché.");
-			else _tiposDeCombustible.add(combustible);
+			else tiposDeCombustible.add(combustible);
 		logger.info(LOG_ETIQUETA_CACHE +
 							"Se han añadido a la caché {} tipos de Combustibles.",
 					combustibles.size());
@@ -101,17 +101,17 @@ public class ApplicationCache {
 	 * @return Map inmutable de Comunidades Autónomas.
 	 */
 	public Map<Short, ComunidadAutonoma> getComunidadesAutonomas() {
-		return Map.copyOf(_comunidadesAutonomas);
+		return Map.copyOf(comunidadesAutonomas);
 	}
 
 	/**
 	 * Devuelve una Comunidad Autónoma por su ID.
 	 *
-	 * @param id @{@link Short} entero positivo que representa el ID de la Comunidad Autónoma.
+	 * @param id {@link Short} entero positivo que representa el ID de la Comunidad Autónoma.
 	 * @return Comunidad Autónoma correspondiente al ID proporcionado o null si no existe.
 	 */
 	public ComunidadAutonoma getComunidadAutonomaById(short id) {
-		return _comunidadesAutonomas.get(id);
+		return comunidadesAutonomas.get(id);
 	}
 
 	/**
@@ -123,7 +123,7 @@ public class ApplicationCache {
 		for (ComunidadAutonoma comunidadAutonoma : ccaas)
 			if (comunidadAutonoma == null) throw new IllegalArgumentException(
 					"No se pueden añadir Comunidades Autónomas nulas a la caché.");
-			else _comunidadesAutonomas.put(comunidadAutonoma.getId(), comunidadAutonoma);
+			else comunidadesAutonomas.put(comunidadAutonoma.getId(), comunidadAutonoma);
 		logger.info(LOG_ETIQUETA_CACHE +
 							"Se han añadido a la caché {} Comunidades Autónomas.",
 					ccaas.size());
@@ -139,17 +139,17 @@ public class ApplicationCache {
 	 * @return Map inmutable de Provincias.
 	 */
 	public Map<Short, Provincia> getProvincias() {
-		return Map.copyOf(_provincias);
+		return Map.copyOf(provincias);
 	}
 
 	/**
 	 * Devuelve una Provincia por su ID.
 	 *
-	 * @param id @{@link Short} entero positivo que representa el ID de la Provincia.
+	 * @param id {@link Short} entero positivo que representa el ID de la Provincia.
 	 * @return Provincia correspondiente al ID proporcionado o null si no existe.
 	 */
 	public Provincia getProvinciaById(short id) {
-		return _provincias.get(id);
+		return provincias.get(id);
 	}
 
 	/**
@@ -161,7 +161,7 @@ public class ApplicationCache {
 		for (Provincia provincia : provincias)
 			if (provincia == null) throw new IllegalArgumentException(
 					"No se pueden añadir Provincias nulas a la caché.");
-			else _provincias.put(provincia.getId(), provincia);
+			else this.provincias.put(provincia.getId(), provincia);
 		logger.info(LOG_ETIQUETA_CACHE + "Se han añadido a la caché {} Provincias.",
 					provincias.size());
 	}
@@ -176,17 +176,17 @@ public class ApplicationCache {
 	 * @return Map inmutable de Municipios.
 	 */
 	public Map<Short, Municipio> getMunicipios() {
-		return Map.copyOf(_municipios);
+		return Map.copyOf(municipios);
 	}
 
 	/**
 	 * Devuelve un Municipio por su ID.
 	 *
-	 * @param id @{@link Short} entero positivo que representa el ID del Municipio.
-	 * @return @{@link Municipio} correspondiente al ID proporcionado o null si no existe.
+	 * @param id {@link Short} entero positivo que representa el ID del Municipio.
+	 * @return {@link Municipio} correspondiente al ID proporcionado o null si no existe.
 	 */
 	public Municipio getMunicipioById(short id) {
-		return _municipios.get(id);
+		return municipios.get(id);
 	}
 
 	/**
@@ -198,7 +198,7 @@ public class ApplicationCache {
 		for (Municipio m : municipios)
 			if (m == null) throw new IllegalArgumentException(
 					"No se pueden añadir Municipios nulos a la caché.");
-			else _municipios.put(m.getId(), m);
+			else this.municipios.put(m.getId(), m);
 		logger.info(LOG_ETIQUETA_CACHE + "Se han añadido a la caché {} Municipios.",
 					municipios.size());
 	}

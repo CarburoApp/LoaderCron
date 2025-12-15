@@ -25,7 +25,7 @@ public class FindAllCombustibles implements Command<List<Combustible>> {
 		List<CombustibleRecord> list = cg.findAll();
 		List<Combustible> lista = EntityAssembler.toEntityList(list);
 		Loggers.DB.info(
-				"Se han cargado todos los tipos de combustible de la BD. Total: {}",
+				"CARGADOS todos los tipos-de-combustible de la BD. Total: {}",
 				list.size());
 		// Lo añado a la caché
 		ApplicationCache.instance.addCombustibles(lista);

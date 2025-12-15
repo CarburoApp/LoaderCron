@@ -44,6 +44,9 @@ public class CCAAGatewayImpl extends AbstractGatewayImpl<CCAARecord>
 	@Override
 	protected Optional<CCAARecord> doFindByIdTransformToElement(ResultSet rs)
 			throws SQLException {
+		if (!rs.next()) {
+			return Optional.empty();
+		}
 		return Optional.of(RecordAssembler.toCCAARecord(rs));
 	}
 

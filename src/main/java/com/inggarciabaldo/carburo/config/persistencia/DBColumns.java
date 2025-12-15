@@ -18,7 +18,7 @@ public final class DBColumns {
 	public static final String EESS_TABLE = "eess";
 	public static final String COMBUSTIBLE_TABLE = "combustible";
 	public static final String PRECIOCOMBUSTIBLE_TABLE = "preciocombustible";
-	public static final String COMBUSTIBLE_DISPONIBLE_TABLE = "combustible_disponible";
+	public static final String COMBUSTIBLE_DISPONIBLE_TABLE = "combustibledisponible";
 
 	// =======================================================
 	// CCAA

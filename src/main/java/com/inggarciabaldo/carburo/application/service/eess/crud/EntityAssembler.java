@@ -21,6 +21,8 @@ import java.util.Optional;
 
 public class EntityAssembler {
 
+	private EntityAssembler() {}
+
 	public static List<EstacionDeServicio> toEntityList(List<EESSRecord> list) {
 		return list.stream().map(EntityAssembler::toEntity).toList();
 	}

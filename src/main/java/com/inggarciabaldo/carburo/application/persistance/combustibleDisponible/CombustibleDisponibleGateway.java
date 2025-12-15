@@ -1,13 +1,24 @@
 package com.inggarciabaldo.carburo.application.persistance.combustibleDisponible;
 
 import com.inggarciabaldo.carburo.application.persistance.PersistenceException;
+import com.inggarciabaldo.carburo.application.persistance.eess.EESSGateway.EESSRecord;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface CombustibleDisponibleGateway {
 
 	void add(short idCombustible, int idEESS) throws PersistenceException;
+
+	/**
+	 * Inserta masivamente una colección de objetos Combustible-Disponible.
+	 *
+	 * @param records colección de EESS a insertar
+	 * @return número de objetos Combustible-Disponible insertados satisfactoriamente
+	 * @throws PersistenceException si ocurre un error de persistencia
+	 */
+	int addAll(Collection<CombustibleDisponibleRecord> records);
 
 	void remove(short idCombustible, int idEESS) throws PersistenceException;
 

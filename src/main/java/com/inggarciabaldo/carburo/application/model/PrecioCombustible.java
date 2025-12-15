@@ -7,7 +7,6 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /**
@@ -81,13 +80,6 @@ public class PrecioCombustible implements Serializable {
 						" . Actualmente: " + precio);
 		this.precio = BigDecimal.valueOf(precio).setScale(3, RoundingMode.HALF_UP)
 				.doubleValue();
-	}
-
-	/**
-	 * Formatea de fecha legible
-	 */
-	private String getHoraToString() {
-		return fecha.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 	}
 
 	// ==============================

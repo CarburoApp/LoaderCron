@@ -26,7 +26,7 @@ public abstract class AbstractGatewayImpl<T> implements Gateway<T> {
 	 * Cargador de propiedades para obtener consultas SQL
 	 * desde los archivos .properties.
 	 */
-	private final static PropertyLoader propertyLoader = PropertyLoader.getInstance();
+	private static final PropertyLoader propertyLoader = PropertyLoader.getInstance();
 
 	/**
 	 * Sufijos estándar para identificar las consultas
@@ -38,10 +38,10 @@ public abstract class AbstractGatewayImpl<T> implements Gateway<T> {
 	 * USUARIO_FINDALL
 	 * USUARIO_FINDBYID
 	 */
-	private final static String ADD_KEY = "ADD";
-	private final static String UPDATE_KEY = "UPDATE";
-	private final static String FIND_ALL_KEY = "FINDALL";
-	private final static String FIND_ID_KEY = "FINDBYID";
+	protected static final String ADD_KEY = "ADD";
+	protected static final String UPDATE_KEY = "UPDATE";
+	protected static final String FIND_ALL_KEY = "FINDALL";
+	protected static final String FIND_ID_KEY = "FINDBYID";
 
 
 	/*

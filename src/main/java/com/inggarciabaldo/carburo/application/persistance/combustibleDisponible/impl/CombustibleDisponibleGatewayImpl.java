@@ -9,6 +9,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,19 +22,19 @@ public class CombustibleDisponibleGatewayImpl implements CombustibleDisponibleGa
 	 * Cargador de propiedades para obtener consultas SQL
 	 * desde los archivos .properties.
 	 */
-	private final static PropertyLoader propertyLoader = PropertyLoader.getInstance();
+	private static final PropertyLoader propertyLoader = PropertyLoader.getInstance();
 
 	/**
 	 * Sufijos para identificar las consultas
 	 */
-	private final static String ADD_KEY = "ADD";
-	private final static String REMOVE_KEY = "REMOVE";
-	private final static String FIND_ALL_KEY = "FINDALL";
-	private final static String FIND_ID_KEY = "FINDBYID";
-	private final static String FIND_BY_KEY = "FINDBY";
+	private static final String ADD_KEY = "ADD";
+	private static final String REMOVE_KEY = "REMOVE";
+	private static final String FIND_ALL_KEY = "FINDALL";
+	private static final String FIND_ID_KEY = "FINDBYID";
+	private static final String FIND_BY_KEY = "FINDBY";
 
-	private final static String FIND_EESS_KEY = "EESS";
-	private final static String FIND_COMBUSTIBLE_KEY = "COMBUSTIBLE";
+	private static final String FIND_EESS_KEY = "EESS";
+	private static final String FIND_COMBUSTIBLE_KEY = "COMBUSTIBLE";
 
 	private String getQuery(String operation) {
 		String key = COMBUSTIBLE_DISPONIBLE_TABLE + "_" + operation;
@@ -58,6 +59,33 @@ public class CombustibleDisponibleGatewayImpl implements CombustibleDisponibleGa
 		} catch (SQLException e) {
 			throw new PersistenceException(e);
 		}
+	}
+
+	/**
+	 * Inserta masivamente una colección de objetos Combustible-Disponible.
+	 *
+	 * @param records colección de EESS a insertar
+	 * @return número de objetos Combustible-Disponible insertados satisfactoriamente
+	 * @throws PersistenceException si ocurre un error de persistencia
+	 */
+	@Override
+	public int addAll(Collection<CombustibleDisponibleRecord> records) {
+		int elementosInsertados = 0;
+		try {
+			Connection c = Jdbc.getCurrentConnection();
+			String sql = getQuery(ADD_KEY);
+
+			for (CombustibleDisponibleRecord record : records)
+				try (PreparedStatement pst = c.prepareStatement(sql)) {
+					pst.setShort(1, record.idCombustible);
+					pst.setInt(2, record.idEESS);
+					pst.executeUpdate();
+					elementosInsertados++;
+				}
+		} catch (SQLException e) {
+			throw new PersistenceException(e);
+		}
+		return elementosInsertados;
 	}
 
 

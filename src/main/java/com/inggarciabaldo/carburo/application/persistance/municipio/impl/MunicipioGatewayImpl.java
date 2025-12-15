@@ -44,6 +44,9 @@ public class MunicipioGatewayImpl extends AbstractGatewayImpl<MunicipioRecord>
 	@Override
 	protected Optional<MunicipioRecord> doFindByIdTransformToElement(ResultSet rs)
 			throws SQLException {
+		if (!rs.next()) {
+			return Optional.empty();
+		}
 		return Optional.of(RecordAssembler.toMunicipioRecord(rs));
 	}
 }

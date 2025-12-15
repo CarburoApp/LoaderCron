@@ -98,6 +98,17 @@ public class EstacionDeServicio implements Serializable {
 	// SETTERS CON VALIDACIÓN
 	// ==============================
 
+	/**
+	 * Asigna el id de la estación de servicio.
+	 * <p>
+	 * De manera adicional tiene la responsabilidad de mantener la integridad referencial,
+	 * modificando si es necesario aquellos elementos que dependan de la id. En este caso:
+	 * - Disponibilidades de combustibles: Es simplemente una lista
+	 * - Precios de combustibles: Se mantiene la integridad gracias a la POO.
+	 *
+	 * @param id entero que indica la clave única de la entidad, debe ser un número entero positivo.
+	 * @throws IllegalArgumentException si el id es negativo.
+	 */
 	public void setId(int id) {
 		if (id < 0) throw new IllegalArgumentException(
 				"El id debe ser un número entero positivo: " + id);

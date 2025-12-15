@@ -59,12 +59,12 @@ public class EESSParser {
 	}
 
 	/**
-	 * Parsea un @{@link ESParserDTO} de gasolinera y devuelve un objeto EESS
+	 * Parsea un {@link ESParserDTO} de gasolinera y devuelve un objeto EESS
 	 * con toda la información, incluyendo relación con Municipio, Provincia y precios de combustibles.
 	 *
-	 * @param item @{@link ESParserDTO} de la estación.
-	 * @param fecha @{@link LocalDate} Fecha de los precios.
-	 * @return  @{@link EstacionDeServicio} EESS parseada y persistida si no existía previamente.
+	 * @param item {@link ESParserDTO} de la estación.
+	 * @param fecha {@link LocalDate} Fecha de los precios.
+	 * @return  {@link EstacionDeServicio} EESS parseada y persistida si no existía previamente.
 	 * @throws IllegalArgumentException si algún campo es inválido según las reglas de negocio.
 	 *
 	 */

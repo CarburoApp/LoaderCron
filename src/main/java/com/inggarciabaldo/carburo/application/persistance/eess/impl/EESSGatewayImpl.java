@@ -6,10 +6,8 @@ import com.inggarciabaldo.carburo.application.persistance.eess.EESSGateway;
 import com.inggarciabaldo.carburo.application.persistance.eess.EESSGateway.EESSRecord;
 import com.inggarciabaldo.carburo.config.persistencia.jdbc.Jdbc;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,7 +20,7 @@ public class EESSGatewayImpl extends AbstractGatewayImpl<EESSRecord>
 	 * Sufijos estándar para identificar las consultas
 	 * EESS_FINDBYEXTCODE
 	 */
-	private final static String FIND_EXTCODE_KEY = "FINDBYEXTCODE";
+	private static final String FIND_EXTCODE_KEY = "FINDBYEXTCODE";
 
 	@Override
 	public Optional<EESSRecord> findByExtCode(int extCodeId) {
@@ -37,6 +35,43 @@ public class EESSGatewayImpl extends AbstractGatewayImpl<EESSRecord>
 					return doFindByIdTransformToElement(rs);
 				}
 			}
+		} catch (SQLException e) {
+			throw new PersistenceException(e);
+		}
+	}
+
+	/**
+	 * Inserta masivamente una colección de nuevas EESS.
+	 * A cada record se le asigna el ID autogenerado por la BD.
+	 *
+	 * @param records colección de EESS a insertar
+	 * @return colección de EESSRecord con ID asignado
+	 * @throws PersistenceException si ocurre un error de persistencia
+	 */
+	@Override
+	public Collection<EESSRecord> addAll(Collection<EESSRecord> records)
+			throws PersistenceException {
+		try {
+			Connection c = Jdbc.getCurrentConnection();
+			String sql = getQuery(ADD_KEY);
+
+			try (PreparedStatement pst = c.prepareStatement(sql,
+															Statement.RETURN_GENERATED_KEYS)) {
+				for (EESSRecord record : records) {
+					doInsertPreparedStatement(record, pst);
+					pst.executeUpdate();
+
+					// Recuperamos el ID generado
+					try (ResultSet rs = pst.getGeneratedKeys()) {
+						if (rs.next()) record.id = rs.getInt(1);
+						else throw new PersistenceException(
+								"No se generó ID para la EESS insertada");
+
+					}
+				}
+			}
+			return records;
+
 		} catch (SQLException e) {
 			throw new PersistenceException(e);
 		}
@@ -77,9 +112,7 @@ public class EESSGatewayImpl extends AbstractGatewayImpl<EESSRecord>
 	@Override
 	protected List<EESSRecord> doFindAllTransformToList(ResultSet rs)
 			throws SQLException {
-		if (!rs.next()) {
-			return List.of();
-		}
+
 		return RecordAssembler.toEESSRecordList(rs);
 	}
 

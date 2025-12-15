@@ -17,7 +17,7 @@ public class FindAllEESS implements Command<List<EstacionDeServicio>> {
 		//Recuperamos las estaciones de servicio a traves del gateway
 		EESSGateway mg = Factorias.persistence.forEESS();
 		List<EESSRecord> list = mg.findAll();
-		Loggers.DB.info("Se han cargado todas los EESS de la BD. Total: {}", list.size());
+		Loggers.DB.info("CARGADOS todas los EESS de la BD. Total: {}", list.size());
 		return EntityAssembler.toEntityList(list);
 	}
 

@@ -24,7 +24,7 @@ public class FromCode<T extends Enum<T> & GetCodeEnumInterface> {
 	private static final Map<Class<?>, FromCode<?>> INSTANCES = new ConcurrentHashMap<>();
 
 	// Map estático de enumerados, pero se inicializa la primera vez que se usa
-	private final Map<String, T> BY_CODE;
+	private final Map<String, T> byCode;
 
 	/**
 	 * Constructor que inicializa la herramienta que facilita la obtención de enumerados
@@ -35,7 +35,7 @@ public class FromCode<T extends Enum<T> & GetCodeEnumInterface> {
 	 * @param enumClass Clase del enumerado del que se quieren obtener los valores.
 	 */
 	private FromCode(Class<T> enumClass) {
-		this.BY_CODE = Arrays.stream(enumClass.getEnumConstants()).collect(
+		this.byCode = Arrays.stream(enumClass.getEnumConstants()).collect(
 				Collectors.toMap(e -> e.getCode().toUpperCase(), Function.identity()));
 	}
 
@@ -61,7 +61,7 @@ public class FromCode<T extends Enum<T> & GetCodeEnumInterface> {
 	public T fromCode(String code) {
 		if (code == null || code.isEmpty()) throw new IllegalArgumentException(
 				"El código del enumerado planteado no es válido. Nulo o vacío.");
-		T value = BY_CODE.get(code.toUpperCase());
+		T value = byCode.get(code.toUpperCase());
 		if (value == null) throw new IllegalArgumentException(
 				"Enumerado no encontrado según el código: " + code);
 		return value;

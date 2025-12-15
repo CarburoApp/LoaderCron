@@ -7,6 +7,8 @@ import java.util.List;
 
 public class EntityAssembler {
 
+	private EntityAssembler() {}
+
 	public static List<ComunidadAutonoma> toEntityList(List<CCAARecord> list) {
 		return list.stream().map(EntityAssembler::toEntity).toList();
 	}

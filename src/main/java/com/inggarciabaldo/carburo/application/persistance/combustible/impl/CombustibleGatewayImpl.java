@@ -47,6 +47,9 @@ public class CombustibleGatewayImpl extends AbstractGatewayImpl<CombustibleRecor
 	@Override
 	protected Optional<CombustibleRecord> doFindByIdTransformToElement(ResultSet rs)
 			throws SQLException {
+		if (!rs.next()) {
+			return Optional.empty();
+		}
 		return Optional.of(RecordAssembler.toCombustibleRecord(rs));
 	}
 
