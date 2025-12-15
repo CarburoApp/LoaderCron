@@ -6,8 +6,11 @@ import com.inggarciabaldo.carburo.application.model.enums.Venta;
 import lombok.Getter;
 
 import java.io.Serializable;
+import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Getter
 public class EstacionDeServicio implements Serializable {
@@ -32,7 +35,10 @@ public class EstacionDeServicio implements Serializable {
 	private Venta venta;
 	private double x100BioEtanol;
 	private double x100EsterMetilico;
-	private final List<Combustible> combustiblesDisponibles = List.of();
+
+	// Otros datos
+	private final Set<Combustible> combustiblesDisponibles = new HashSet<>();
+	private final Set<PrecioCombustible> preciosCombustibles = new HashSet<>();
 
 	public EstacionDeServicio(int id, int extCode, String rotulo, String horario,
 							  String direccion, String localidad, int codigoPostal,
@@ -71,11 +77,22 @@ public class EstacionDeServicio implements Serializable {
 		setCombustiblesDisponibles(combustiblesDisponibles);
 	}
 
-	private void setCombustiblesDisponibles(List<Combustible> combustiblesDisponibles) {
-		if (combustiblesDisponibles == null) throw new IllegalArgumentException(
-				"La lista de combustibles disponibles no puede ser nula.");
-		this.combustiblesDisponibles.addAll(combustiblesDisponibles);
+
+	public boolean addPrecioCombustible(double precio, Combustible combustible,
+										LocalDate fecha) {
+		PrecioCombustible precioC = new PrecioCombustible(this, combustible, fecha,
+														  precio);
+		return this.preciosCombustibles.add(precioC);
 	}
+
+	public boolean addCombustibleDisponible(Combustible combustible) {
+		return this.combustiblesDisponibles.add(combustible);
+	}
+
+	public boolean removeCombustibleDisponible(Combustible combustible) {
+		return this.combustiblesDisponibles.remove(combustible);
+	}
+
 
 	// ==============================
 	// SETTERS CON VALIDACIÓN
@@ -216,6 +233,12 @@ public class EstacionDeServicio implements Serializable {
 		if (venta == null)
 			throw new IllegalArgumentException("La venta no puede ser nulo.");
 		this.venta = venta;
+	}
+
+	private void setCombustiblesDisponibles(List<Combustible> combustiblesDisponibles) {
+		if (combustiblesDisponibles == null) throw new IllegalArgumentException(
+				"La lista de combustibles disponibles no puede ser nula.");
+		this.combustiblesDisponibles.addAll(combustiblesDisponibles);
 	}
 
 	// ==============================

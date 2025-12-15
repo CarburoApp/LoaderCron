@@ -1,12 +1,16 @@
 package com.inggarciabaldo.carburo.scheduler.jobs;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.inggarciabaldo.carburo.application.model.EstacionDeServicio;
 import com.inggarciabaldo.carburo.application.rest.GasStationHttpRequest;
 import com.inggarciabaldo.carburo.application.rest.dto.EETTReqResParserDTO;
+import com.inggarciabaldo.carburo.application.rest.dto.ESParserDTO;
 import com.inggarciabaldo.carburo.application.rest.parser.EETTReqResParser;
+import com.inggarciabaldo.carburo.application.rest.parser.PreciosCombustibleParser;
 import com.inggarciabaldo.carburo.config.cache.ApplicationCache;
+import com.inggarciabaldo.carburo.config.parser.deserialize.ESParserDTODeserializer;
 import com.inggarciabaldo.carburo.config.persistencia.jdbc.Jdbc;
 import com.inggarciabaldo.carburo.util.log.Loggers;
 import com.inggarciabaldo.carburo.util.properties.PropertyLoader;
@@ -21,7 +25,9 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.*;
 
@@ -226,6 +232,29 @@ public class EESSRecolectorJobParser implements Job {
 												"Error al válidar la respuesta JSON de la API.");
 	}
 
+	/**
+	 * Extrae los datos del JSON de respuesta a un DTO usando Gson.
+	 *
+	 * @param jsonRespuestaAPI JSON de respuesta de la API
+	 * @return El DTO con los datos extraídos
+	 */
+	private EETTReqResParserDTO extraeDatosDesdeJSONaDTO(JSONObject jsonRespuestaAPI)
+			throws JsonSyntaxException {
+		long tiempoInicioEjecucion = System.currentTimeMillis();
+		// Crear instancia de Gson
+		Gson gson = new GsonBuilder().registerTypeAdapter(ESParserDTO.class,
+														  new ESParserDTODeserializer())
+				.create();
+		// Mapear JSON a DTO
+		EETTReqResParserDTO dto = gson.fromJson(jsonRespuestaAPI.toString(),
+												EETTReqResParserDTO.class);
+		this.tiempoJSONParseoDTOMs = System.currentTimeMillis() - tiempoInicioEjecucion;
+		this.totalEESSEnDTO        = dto.getListaEESS().size();
+		if (totalEESSEnDTO == 0) loggerCron.warn(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
+														 "No se transformado ninguna estación a DTO. CRON finalizado.");
+		return dto;
+	}
+
 
 	/**
 	 * Parsea las estaciones de servicio desde el DTO obtenido del JSON de la API.
@@ -258,6 +287,7 @@ public class EESSRecolectorJobParser implements Job {
 										   null) ? 0 : estacionesDeServicioParseadas.size();
 		return estacionesDeServicioParseadas;
 	}
+
 
 	/**
 	 * Guarda la respuesta JSON de la API en un archivo local con formato legible.
@@ -316,27 +346,6 @@ public class EESSRecolectorJobParser implements Job {
 							 e.getMessage(), e);
 		}
 
-	}
-
-	/**
-	 * Extrae los datos del JSON de respuesta a un DTO usando Gson.
-	 *
-	 * @param jsonRespuestaAPI JSON de respuesta de la API
-	 * @return El DTO con los datos extraídos
-	 */
-	private EETTReqResParserDTO extraeDatosDesdeJSONaDTO(JSONObject jsonRespuestaAPI)
-			throws JsonSyntaxException {
-		long tiempoInicioEjecucion = System.currentTimeMillis();
-		// Crear instancia de Gson
-		Gson gson = new Gson();
-		// Mapear JSON a DTO
-		EETTReqResParserDTO dto = gson.fromJson(jsonRespuestaAPI.toString(),
-												EETTReqResParserDTO.class);
-		this.tiempoJSONParseoDTOMs = System.currentTimeMillis() - tiempoInicioEjecucion;
-		this.totalEESSEnDTO        = dto.getListaEESS().size();
-		if (totalEESSEnDTO == 0) loggerCron.warn(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
-														 "No se transformado ninguna estación a DTO. CRON finalizado.");
-		return dto;
 	}
 
 	/**

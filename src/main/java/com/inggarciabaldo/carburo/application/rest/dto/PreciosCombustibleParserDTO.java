@@ -5,17 +5,21 @@ import lombok.*;
 
 import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.*;
 
+
+/**
+ * DTO para la petición de Estaciones de Servicio (EETT).
+ * Pensado para ser usado en todas peticiones relacionadas con Estaciones Terrestres.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
 @ToString
-/**
- * DTO para la petición de Estaciones de Servicio (EETT).
- * Pensado para ser usado en todas peticiones relacionadas con Estaciones Terrestres.
- */
-public class PreciosCarburanteParserDTO {
+public class PreciosCombustibleParserDTO {
+
+    @SerializedName(API_KEY_RESP_PRECIO_PRODUCTO)
+    private String precio;
 
     @SerializedName(API_KEY_RESP_PRECIO_ADBLUE)
     private String precioAdblue;

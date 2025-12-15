@@ -5,6 +5,7 @@ import com.inggarciabaldo.carburo.application.rest.dto.enums.MargenParserDto;
 import com.inggarciabaldo.carburo.application.rest.dto.enums.RemisionParserDto;
 import com.inggarciabaldo.carburo.application.rest.dto.enums.VentaParserDto;
 import lombok.*;
+
 import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.*;
 
 @Getter
@@ -66,18 +67,14 @@ import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.*;
 	@SerializedName(API_KEY_RESP_EESS_LONGITUD)
 	private String longitud; // idem
 
-	@SerializedName("Precio Gasoleo A") // TODO Debe de ser eliminado más adelante
-	private String precioGasoleoA;
-
-	@SerializedName("Precio Gasolina 95 E5") // TODO Debe de ser eliminado más adelante
-	private String precioGasolina95E5;
-
-	@SerializedName("Precio Gasolina 98 E5") // TODO Debe de ser eliminado más adelante
-	private String precioGasolina98E5;
-
 	@SerializedName(API_KEY_RESP_EESS_X_100_BIOETANOL)
 	private String bioEtanol;
 
 	@SerializedName(API_KEY_RESP_EESS_X_100_ESTER_METILICO)
 	private String esterMetilico;
+
+	/*
+	 * Precios
+	 */
+	private PreciosCombustibleParserDTO precios;
 }

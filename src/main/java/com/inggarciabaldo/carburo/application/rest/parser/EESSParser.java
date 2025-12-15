@@ -1,23 +1,20 @@
 package com.inggarciabaldo.carburo.application.rest.parser;
 
 import com.inggarciabaldo.carburo.application.Factorias;
-import com.inggarciabaldo.carburo.application.model.Combustible;
-import com.inggarciabaldo.carburo.application.model.EstacionDeServicio;
-import com.inggarciabaldo.carburo.application.model.Municipio;
-import com.inggarciabaldo.carburo.application.model.Provincia;
+import com.inggarciabaldo.carburo.application.model.*;
 import com.inggarciabaldo.carburo.application.model.enums.Margen;
 import com.inggarciabaldo.carburo.application.model.enums.Remision;
 import com.inggarciabaldo.carburo.application.model.enums.Venta;
 import com.inggarciabaldo.carburo.application.rest.dto.ESParserDTO;
+import com.inggarciabaldo.carburo.application.rest.dto.PreciosCombustibleParserDTO;
 import com.inggarciabaldo.carburo.application.service.ServiceFactory;
 import com.inggarciabaldo.carburo.util.log.Loggers;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -28,12 +25,11 @@ public class EESSParser {
 	// Logger para operaciones de parseo
 	private static final Logger parseLog = Loggers.PARSE;
 
+	private final PreciosCombustibleParser preciosCombustibleParser;
 
 	// Mapas de referencia para evitar consultas repetidas
 	private final Map<Short, Provincia> provinciasMap;
 	private final Map<Short, Municipio> municipiosMap;
-	private final Map<String, Combustible> combustiblesMap;
-	private final Map<Integer, EstacionDeServicio> eessExistentes;
 
 
 	/**
@@ -49,8 +45,8 @@ public class EESSParser {
 		ServiceFactory serviceFactory = Factorias.service;
 
 		// Crear los mapas de referencia para el parser
-		this.combustiblesMap = serviceFactory.forCombustible().findAllCombustibles()
-				.stream().collect(Collectors.toMap(Combustible::getDenominacion, c -> c));
+		Set<Combustible> combustibles = new HashSet<>(
+				serviceFactory.forCombustible().findAllCombustibles());
 
 		this.provinciasMap = serviceFactory.forProvincia().findAllProvincias().stream()
 				.collect(Collectors.toMap(Provincia::getExtCode, p -> p));
@@ -58,8 +54,8 @@ public class EESSParser {
 		this.municipiosMap = serviceFactory.forMunicipio().findAllMunicipios().stream()
 				.collect(Collectors.toMap(Municipio::getExtCode, m -> m));
 
-		this.eessExistentes = serviceFactory.forEESS().findAllEESS().stream()
-				.collect(Collectors.toMap(EstacionDeServicio::getExtCode, p -> p));
+		this.preciosCombustibleParser = new PreciosCombustibleParser(combustibles);
+
 	}
 
 	/**
@@ -105,11 +101,36 @@ public class EESSParser {
 									  latitud, longitud, margen, remision, venta,
 									  bioEtanol, esterMetilico);
 
-
-		// 3. Parseamos precios de combustibles
-		//parsePrecios(item, eess, fecha, combustible);
+		// 8. Parseamos los precios de combustibles y su disponibilidad
+		this.parsePrecios(item.getPrecios(), fecha, eess);
 
 		return eess;
+	}
+
+	/**
+	 * Parsea y acopla los precios de combustibles a una EESS dada.
+	 *
+	 * @param item  PreciosCombustibleParserDTO de la estación
+	 * @param fecha Fecha de los precios
+	 * @param eess  Estación de servicio a la que se le acoplan los precios
+	 */
+	public void parsePrecios(PreciosCombustibleParserDTO item, LocalDate fecha,
+							 EstacionDeServicio eess) {
+		Set<PrecioCombustible> prComb;
+		// Parseo los precios de combustibles
+		prComb = preciosCombustibleParser.parsePrecioCombustibleEESS(item, eess, fecha);
+		if (prComb == null || prComb.isEmpty()) return;
+
+		// Acoplo los precios a la EESS
+		for (PrecioCombustible objPrecio : prComb)
+			eess.addPrecioCombustible(objPrecio.getPrecio(), objPrecio.getCombustible(),
+									  fecha);
+		// Defino los Combustibles disponibles de la EESS
+		for (PrecioCombustible objPrecio : prComb)
+			eess.addCombustibleDisponible(objPrecio.getCombustible());
+
+		//parseLog.info("La EESS id {} ha generado {} nuevos precios asociados.",
+		//			  eess.getId(), eess.getPreciosCombustibles().size());
 	}
 
 
@@ -258,122 +279,4 @@ public class EESSParser {
 			return 0;
 		}
 	}
-
-
-	/**
-	 * ==============================
-	 *  FIN
-	 *  ==============================
-	 */
-
-
-
-
-	/**
-	 * Parsea los precios de combustibles de una EESS desde un JSONObject.
-	 * Si combustible es null, se procesan todos los combustibles.
-	 * Si combustible != null, solo se parsea ese combustible usando la clave PRECIO_PREFIX.
-	 *
-	 * @param item        JSONObject de la estación
-	 * @param estacionDeServicio          EESS asociada
-	 * @param fecha       Fecha de los precios
-	 * @param combustible Combustible específico a parsear (opcional). Null = todos.
-	 */
-	private void parsePrecios(JSONObject item, EstacionDeServicio estacionDeServicio,
-							  LocalDate fecha,
-							  Combustible combustible) {
-		if (combustible == null) {
-			parsePreciosTodosCombustibles(item, estacionDeServicio, fecha);
-		} else {
-			parsePrecioCombustible(item, estacionDeServicio, fecha, combustible);
-		}
-	}
-
-	/**
-	 * Itera todos los combustibles y parsea sus precios.
-	 */
-	private void parsePreciosTodosCombustibles(JSONObject item,
-											   EstacionDeServicio estacionDeServicio,
-											   LocalDate fecha) {
-		List<Combustible> combustibles = null;//= repoCombustible.findAll();
-		for (Combustible c : combustibles) {
-			BigDecimal precio = parsearPrecio(item, "", c);
-			if (precio != null) {
-				persistirPrecio(estacionDeServicio, c, fecha, precio);
-				actualizarDisponibilidadCombustible(estacionDeServicio, c);
-			}
-		}
-	}
-
-	/**
-	 * Parsea solo un combustible concreto usando la clave PRECIO_PREFIX.
-	 */
-	private void parsePrecioCombustible(JSONObject item,
-										EstacionDeServicio estacionDeServicio,
-										LocalDate fecha,
-										Combustible c) {
-		BigDecimal precio = parsearPrecio(item, "", c);
-		if (precio != null) {
-			persistirPrecio(estacionDeServicio, c, fecha, precio);
-			actualizarDisponibilidadCombustible(estacionDeServicio, c);
-		}
-	}
-
-	/**
-	 * Parsea el precio de un combustible a BigDecimal.
-	 * Devuelve null si el precio está vacío o inválido.
-	 */
-	private BigDecimal parsearPrecio(JSONObject item, String jsonKey,
-									 Combustible combustible) {
-		String precioStr = item.optString(jsonKey, "").replace(",", ".").trim();
-		if (precioStr.isEmpty()) return null;
-		try {
-			return new BigDecimal(precioStr);
-		} catch (NumberFormatException e) {
-			parseLog.error("Precio inválido para {}: {}", combustible.getDenominacion(),
-						   precioStr, e);
-			return null;
-		}
-	}
-
-	/**
-	 * Persiste o actualiza un precio en la base de datos.
-	 */
-	private void persistirPrecio(EstacionDeServicio estacionDeServicio,
-								 Combustible combustible, LocalDate fecha,
-								 BigDecimal precio) {
-		//		PrecioCombustible existente = repoPrecioCombustible.findByEESSAndCombustibleAndFecha(
-		//				ES, combustible, fecha);
-		//
-		//		if (existente != null) {
-		//			if (existente.getPrecio().compareTo(precio) != 0) {
-		//				existente.setPrecio(precio);
-		//				repoPrecioCombustible.update(existente);
-		//			}
-		//		} else {
-		//			// Aseguramos que las entidades relacionadas están gestionadas
-		//			EntityManager em = JPAUtil.getEntityManager();
-		//			ES managedES = em.getReference(ES.class, ES.getId());
-		//			Combustible managedCombustible = em.getReference(Combustible.class,
-		//															 combustible.getId());
-		//
-		//			PrecioCombustible nuevo = new PrecioCombustible(managedES, managedCombustible,
-		//															fecha, precio);
-		//			repoPrecioCombustible.save(nuevo); // persist ahora es seguro
-		//		}
-	}
-
-
-	/**
-	 * Actualiza la lista de combustibles disponibles de la EESS.
-	 */
-	private void actualizarDisponibilidadCombustible(
-			EstacionDeServicio estacionDeServicio, Combustible combustible) {
-		if (!estacionDeServicio.getCombustiblesDisponibles().contains(combustible)) {
-			estacionDeServicio.getCombustiblesDisponibles().add(combustible);
-			//repoEESS.update(ES);
-		}
-	}
-
-
 }

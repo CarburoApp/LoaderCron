@@ -12,11 +12,11 @@ import org.slf4j.Logger;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Clase de alto nivel para parsear la petición a la api, actualmente introducida en el
@@ -119,7 +119,13 @@ public class EETTReqResParser {
 				"La fecha de la petición a la API no está presente en el DTO recibido.");
 
 		// Formato esperado: "dd/MM/yyyy HH:mm:ss"
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_API_RES_FORMAT);
+		DateTimeFormatter formatter = new DateTimeFormatterBuilder().appendPattern(
+						"dd/MM/yyyy ")
+				.appendValue(ChronoField.HOUR_OF_DAY)      // 0–23 (1 o 2 dígitos)
+				.appendLiteral(':').appendValue(ChronoField.MINUTE_OF_HOUR, 2)
+				.appendLiteral(':').appendValue(ChronoField.SECOND_OF_MINUTE, 2)
+				.toFormatter();
+
 		try {
 			LocalDateTime fechaDT = LocalDateTime.parse(fecha, formatter);
 			return fechaDT.toLocalDate();
@@ -232,8 +238,6 @@ public class EETTReqResParser {
 		serviceFactory.forCCAAService().findAllComunidadesAutonomas();     // CCAA
 		serviceFactory.forProvincia().findAllProvincias();     // provincias
 		serviceFactory.forMunicipio().findAllMunicipios();     // municipios
-
-		Set<Integer> eessExistentes = new HashSet<>(); // TODO
 
 		this.tiempoCargaDatosInicialesCache =
 				System.currentTimeMillis() - tiempoCargaDatosInicialesCacheInicio;

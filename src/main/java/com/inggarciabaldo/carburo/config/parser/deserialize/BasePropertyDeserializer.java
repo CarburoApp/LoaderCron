@@ -16,7 +16,6 @@ import java.util.Properties;
  *
  * @param <T> Tipo del DTO destino.
  */
-// TODO
 public abstract class BasePropertyDeserializer<T> implements JsonDeserializer<T> {
 
 	protected static final Properties keys = PropertyLoader.getInstance()

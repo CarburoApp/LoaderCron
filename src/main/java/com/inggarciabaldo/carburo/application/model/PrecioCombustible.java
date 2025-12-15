@@ -1,16 +1,20 @@
 package com.inggarciabaldo.carburo.application.model;
 
+import lombok.Getter;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /**
  * Entidad que representa el precio de un combustible en una EESS (estación de servicio)
  * en una fecha determinada.
  */
+@Getter
 public class PrecioCombustible implements Serializable {
 
 	@Serial
@@ -21,7 +25,7 @@ public class PrecioCombustible implements Serializable {
 	// ==============================
 	public static final LocalDate FECHA_MIN = LocalDate.of(2003, 1, 1);
 	public static final LocalDate FECHA_MAX = LocalDate.now();
-	public static final double PRECIO_MAX = 20.000; // límite máximo del precio
+	public static final double PRECIO_MAX = 100; // límite máximo del precio
 
 	// ==============================
 	// ATRIBUTOS
@@ -36,7 +40,7 @@ public class PrecioCombustible implements Serializable {
 	// ==============================
 	public PrecioCombustible(EstacionDeServicio estacionDeServicio, Combustible combustible, LocalDate fecha,
 							 double precio) {
-		setEs(estacionDeServicio);
+		setEstacionDeServicio(estacionDeServicio);
 		setCombustible(combustible);
 		setFecha(fecha);
 		setPrecio(precio);
@@ -45,7 +49,7 @@ public class PrecioCombustible implements Serializable {
 	// ==============================
 	// SETTERS CON VALIDACIÓN
 	// ==============================
-	public void setEs(EstacionDeServicio estacionDeServicio) {
+	public void setEstacionDeServicio(EstacionDeServicio estacionDeServicio) {
 		if (estacionDeServicio == null) {
 			throw new IllegalArgumentException(
 					"La estación de servicio (ES) no puede ser nula");
@@ -79,23 +83,11 @@ public class PrecioCombustible implements Serializable {
 				.doubleValue();
 	}
 
-	// ==============================
-	// GETTERS
-	// ==============================
-	public LocalDate getFecha() {
-		return fecha;
-	}
-
-	public Combustible getCombustible() {
-		return combustible;
-	}
-
-	public EstacionDeServicio getEs() {
-		return estacionDeServicio;
-	}
-
-	public double getPrecio() {
-		return precio;
+	/**
+	 * Formatea de fecha legible
+	 */
+	private String getHoraToString() {
+		return fecha.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 	}
 
 	// ==============================
@@ -112,7 +104,7 @@ public class PrecioCombustible implements Serializable {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(fecha, combustible, estacionDeServicio, precio);
+		return Objects.hash(fecha, combustible, estacionDeServicio);
 	}
 
 	@Override
