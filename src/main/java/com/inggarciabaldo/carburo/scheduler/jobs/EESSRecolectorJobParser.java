@@ -357,9 +357,9 @@ public class EESSRecolectorJobParser implements Job {
 	 * @param jsonRespuestaAPI JSON de respuesta de la API
 	 */
 	private void guardarRespuestaAPIEnArchivo(JSONObject jsonRespuestaAPI) {
-		// Obtener la ruta desde properties, "" si no existe
+		// Obtener ruta desde properties, "Ejecuciones" por defecto
 		String rutaDirectorio = PropertyLoader.getInstance()
-				.getApplicationProperty("cron.api.requests.filepath", "").trim();
+				.getApplicationProperty("cron.api.requests.filepath", "files").trim();
 
 		// Generamos un nombre de archivo único con timestamp
 		String timestamp = LocalDateTime.now()
@@ -398,6 +398,7 @@ public class EESSRecolectorJobParser implements Job {
 		try (FileWriter writer = new FileWriter(
 				this.datoDeEjecucion.jsonRespuestaArchivo)) {
 			writer.write(jsonRespuestaAPI.toString(4)); // identación de 4 espacios
+			writer.flush();
 			loggerCron.info(
 					"Almacenada respuesta de la API en la ubicación designada. Bajo el nombre: {}",
 					this.datoDeEjecucion.jsonRespuestaArchivo.getName());

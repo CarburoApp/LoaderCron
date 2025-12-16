@@ -7,6 +7,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -15,33 +18,41 @@ import java.util.regex.Pattern;
 /**
  * Clase singleton para manejar propiedades de la aplicación.
  * <p>
- * Permite cargar múltiples archivos de propiedades (application, endpoints, jsonKeys) y acceder
- * a sus valores de manera centralizada. Garantiza que solo exista una instancia de la clase
- * durante toda la ejecución de la aplicación.
+ * Permite cargar múltiples archivos de propiedades (application, endpoints, jsonKeys, queries)
+ * y acceder a sus valores de manera centralizada. Garantiza que solo exista una instancia
+ * de la clase durante toda la ejecución de la aplicación.
+ * <p>
+ * Ahora soporta carga de propiedades desde una carpeta externa /config,
+ * con fallback a resources empaquetados.
  */
 public final class PropertyLoader {
 
-	// Propiedades de configuración general de la aplicación
-	private final Properties applicationProps = new Properties();
+	// ==============================
+	// Constantes de nombres de archivos y carpetas
+	// ==============================
+	private static final String CONFIG_FOLDER = "config";
+	private static final String APPLICATION_PROPERTIES = "application.properties";
+	private static final String ENDPOINTS_PROPERTIES = "endpoints.properties";
+	private static final String JSON_KEYS_PROPERTIES = "jsonKeys.properties";
+	private static final String QUERIES_PROPERTIES = "queries.properties";
 
-	// Propiedades relacionadas con endpoints de servicios
-	private final Properties endpointsProps = new Properties();
-
-	// Propiedades relacionadas con claves JSON o mapeos de datos
-	private final Properties jsonKeysProps = new Properties();
-
-	// Propiedades relacionadas con queries JDBC
-	private final Properties queriesProps = new Properties();
+	// ==============================
+	// Propiedades internas
+	// ==============================
+	private final Properties applicationProps = new Properties(); // configuración general de la aplicación
+	private final Properties endpointsProps = new Properties(); // endpoints de servicios
+	private final Properties jsonKeysProps = new Properties(); // claves JSON o mapeos de datos
+	private final Properties queriesProps = new Properties(); // queries JDBC
 
 	/**
 	 * Constructor privado que carga los archivos de propiedades.
 	 * Se asegura de inicializar todas las Properties necesarias al instanciar la clase.
 	 */
 	private PropertyLoader() {
-		loadProperties("application.properties", applicationProps);
-		loadProperties("endpoints.properties", endpointsProps);
-		loadProperties("jsonKeys.properties", jsonKeysProps);
-		loadProperties("queries.properties", queriesProps);
+		loadProperties(APPLICATION_PROPERTIES, applicationProps);
+		loadProperties(ENDPOINTS_PROPERTIES, endpointsProps);
+		loadProperties(JSON_KEYS_PROPERTIES, jsonKeysProps);
+		loadProperties(QUERIES_PROPERTIES, queriesProps);
 	}
 
 	/**
@@ -58,17 +69,12 @@ public final class PropertyLoader {
 	 * @throws IllegalStateException si ocurre un error al cargar alguno de los archivos
 	 */
 	public void reloadProperties() {
-		// Volvemos a cargar cada archivo de propiedades
-		this.applicationProps.clear();
-		loadProperties("application.properties", applicationProps);
-		this.endpointsProps.clear();
-		loadProperties("endpoints.properties", endpointsProps);
-		this.jsonKeysProps.clear();
-		loadProperties("jsonKeys.properties", jsonKeysProps);
-		this.queriesProps.clear();
-		loadProperties("queries.properties", queriesProps);
+		Loggers.GENERAL.info("RECARGADA de TODAS las PROPIEDADES correctamente desde disco.");
 
-		Loggers.GENERAL.info("RECARGADAS TODAS las PROPIEDADES correctamente desde disco.");
+		loadProperties(APPLICATION_PROPERTIES, applicationProps);
+		loadProperties(ENDPOINTS_PROPERTIES, endpointsProps);
+		loadProperties(JSON_KEYS_PROPERTIES, jsonKeysProps);
+		loadProperties(QUERIES_PROPERTIES, queriesProps);
 	}
 
 	/**
@@ -90,30 +96,49 @@ public final class PropertyLoader {
 
 	/**
 	 * Metodo genérico para cargar un archivo de propiedades en un objeto Properties.
-	 *
-	 * @param fileName nombre del archivo de propiedades a cargar
-	 * @param props    objeto Properties donde se cargarán las propiedades
-	 * @throws IllegalStateException si el archivo no se encuentra o ocurre un error al cargarlo
+	 * <p>
+	 * Primero intenta cargar desde la carpeta externa CONFIG_FOLDER.
+	 * Si no existe, hace fallback al classpath (resources).
+	 * Para application.properties, resuelve variables de entorno tipo ${VAR}.
 	 */
 	private void loadProperties(String fileName, Properties props) {
-		try (InputStream input = getClass().getClassLoader()
-				.getResourceAsStream(fileName)) {
-			if (input == null) {
-				throw new IllegalStateException(
-						"No se encontró el archivo de configuración: " + fileName);
-			}
-			try (Reader reader = new InputStreamReader(input, StandardCharsets.UTF_8)) {
-				props.load(reader);
+		props.clear(); // Limpiar antes de recargar
+
+		Path externalPath = Paths.get(CONFIG_FOLDER, fileName);
+
+		try {
+			if (Files.exists(externalPath)) {
+				// --- Carga desde carpeta externa ---
+				try (Reader reader = Files.newBufferedReader(externalPath,
+															 StandardCharsets.UTF_8)) {
+					props.load(reader);
+				}
+				Loggers.GENERAL.info("PROPIEDADES correctamente CARGADAS desde disco. Ubicación: Carpeta /config");
+			} else {
+				// --- Fallback: carga desde resources ---
+				try (InputStream input = getClass().getClassLoader()
+						.getResourceAsStream(fileName)) {
+					if (input == null) {
+						throw new IllegalStateException(
+								"No se encontró el archivo de configuración: " +
+										fileName);
+					}
+					try (Reader reader = new InputStreamReader(input,
+															   StandardCharsets.UTF_8)) {
+						props.load(reader);
+					}
+				}
+				Loggers.GENERAL.info("PROPIEDADES correctamente CARGADAS desde disco. Ubicación: archivos de respaldo en objeto compilado.");
+				Loggers.GENERAL.warn("La ubicación de los archivos de properties es la de respaldo en el objeto compilado. SE TOMARAN LAS VARIABLES POR DEFECTO. Cualquier modificación en /config no se tendrá en cuenta.");
 			}
 
-			// Solo aplicar sustitución para application.properties
-			if (fileName.equals("application.properties")) {
+			// --- Resolución de variables de entorno solo para application.properties ---
+			if (APPLICATION_PROPERTIES.equals(fileName))
 				for (Map.Entry<Object, Object> entry : props.entrySet()) {
 					String key = entry.getKey().toString();
 					String value = entry.getValue().toString();
 					props.setProperty(key, resolveEnv(value));
 				}
-			}
 		} catch (IOException e) {
 			throw new IllegalStateException(
 					"No se pudo cargar el archivo de configuración: " + fileName, e);

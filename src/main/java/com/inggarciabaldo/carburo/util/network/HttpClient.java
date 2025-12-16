@@ -1,6 +1,7 @@
 package com.inggarciabaldo.carburo.util.network;
 
 import com.inggarciabaldo.carburo.util.log.Loggers;
+import com.inggarciabaldo.carburo.util.properties.PropertyLoader;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -35,7 +36,12 @@ public class HttpClient {
 	/**
 	 * Tiempo máximo de espera para conexión y lectura (en segundos).
 	 */
-	private static final int TIEMPO_ESPERA_SEGUNDOS = 20;
+	private static final int DEFAULT_TIMEOUT_SEGUNDOS = 20;
+
+	/**
+	 * Nombre de la propiedad para configurar timeout HTTP en segundos
+	 */
+	private static final String PROP_TIMEOUT_SEGUNDOS = "httpCliente.request.timeOutSegundos";
 
 	/**
 	 * Cabecera estándar utilizada en todas las peticiones HTTP.
@@ -64,10 +70,20 @@ public class HttpClient {
 	 * Inicializa el cliente OkHttp con los tiempos de espera configurados.
 	 */
 	public HttpClient() {
+		// Leemos el timeout desde properties, usando valor por defecto si no existe
+		int tiempoEsperaSegundos = Integer.parseInt(PropertyLoader.getInstance()
+															.getApplicationProperty(
+																	PROP_TIMEOUT_SEGUNDOS,
+																	String.valueOf(
+																			DEFAULT_TIMEOUT_SEGUNDOS)));
+
+		// Creamos el cliente OkHttp con los tiempos de espera configurados
 		this.clienteHttp = new OkHttpClient.Builder().connectTimeout(
-						Duration.ofSeconds(TIEMPO_ESPERA_SEGUNDOS))
-				.readTimeout(Duration.ofSeconds(TIEMPO_ESPERA_SEGUNDOS))
-				.hostnameVerifier((hostname, session) -> true).build();
+						Duration.ofSeconds(tiempoEsperaSegundos))
+				.readTimeout(Duration.ofSeconds(tiempoEsperaSegundos)).build();
+
+		logger.info("Cliente HTTP inicializado con timeout de {} segundos",
+					tiempoEsperaSegundos);
 	}
 
 	// ---------------------------------------------------------------------------------------------
