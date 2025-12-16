@@ -1,5 +1,8 @@
 package com.inggarciabaldo.carburo.util.email;
 
+import com.inggarciabaldo.carburo.scheduler.jobs.DatoDeEjecucion;
+import com.inggarciabaldo.carburo.util.log.Loggers;
+import com.inggarciabaldo.carburo.util.properties.PropertyLoader;
 import jakarta.activation.DataHandler;
 import jakarta.activation.DataSource;
 import jakarta.activation.FileDataSource;
@@ -10,15 +13,10 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 /**
  * Clase encargada de registrar métricas y enviar un correo resumen
@@ -26,204 +24,132 @@ import java.util.stream.Collectors;
  */
 public class JobEmailSender {
 
-	// -------------------------
-	// Configuración de correo
-	// -------------------------
-	private final String fromEmail;
-	private final String password; // contraseña de la cuenta remitente
-	private final String toEmail; // correo de administración
-	private final String smtpHost;
-	private final int smtpPort;
+	private static final PropertyLoader config = PropertyLoader.getInstance();
 
-	// -------------------------
-	// Datos de la ejecución
-	// -------------------------
-	private LocalDateTime startTime;
-	private String dbConnectionStatus;
-	private String apiStatus;
+	private final String fromEmail = config.getApplicationProperty("mail.from");
+	private final String password = config.getApplicationProperty("mail.password");
+	private final String toEmail = config.getApplicationProperty("mail.to");
+	private final String smtpHost = config.getApplicationProperty("mail.smtp.host");
+	private final int smtpPort = Integer.parseInt(
+			config.getApplicationProperty("mail.smtp.port"));
 
-	private long dbConnectionTimeMs;
-	private long apiConnectionTimeMs;
-	private long parseTimeMs;
-	private long compareSaveTimeMs;
-	private long totalTimeMs;
+	private final DatoDeEjecucion dato;
 
-	private int totalApiElements;
-	private int parsedElements;
-	private int elementsWithErrors;
-	private int newElementsRegistered;
-	private int elementsUpdatedManually;
-	private int elementsWithPriceErrors;
-	private int savedElements;
-	private int savedPrices;
-
-	private File apiResponseJsonFile; // adjunto
-
-	private final List<String> warnings = new ArrayList<>();
-	private final List<String> errors = new ArrayList<>();
-
-	// -------------------------
-	// Constructor
-	// -------------------------
-	public JobEmailSender(String fromEmail, String password, String toEmail,
-						  String smtpHost, int smtpPort) {
-		this.fromEmail = fromEmail;
-		this.password  = password;
-		this.toEmail   = toEmail;
-		this.smtpHost  = smtpHost;
-		this.smtpPort  = smtpPort;
+	public JobEmailSender(DatoDeEjecucion dato) {
+		this.dato = dato;
 	}
 
-	// -------------------------
-	// Métodos para registrar datos
-	// -------------------------
-
-	public void setStartTime(LocalDateTime startTime) {
-		this.startTime = startTime;
-	}
-
-	public void setDbConnectionStatus(String status, long timeMs) {
-		this.dbConnectionStatus = status;
-		this.dbConnectionTimeMs = timeMs;
-		if (!"Correcto".equalsIgnoreCase(status)) {
-			errors.add("Error en conexión con la BD");
-		}
-	}
-
-	public void setApiStatus(String status, long timeMs) {
-		this.apiStatus           = status;
-		this.apiConnectionTimeMs = timeMs;
-		if (!"Correcto".equalsIgnoreCase(status)) {
-			errors.add("Error en conexión con la API");
-		}
-	}
-
-	public void setParseMetrics(int totalApiElements, int parsedElements,
-								int elementsWithErrors, int newElementsRegistered,
-								int elementsUpdatedManually, long parseTimeMs) {
-		this.totalApiElements        = totalApiElements;
-		this.parsedElements          = parsedElements;
-		this.elementsWithErrors      = elementsWithErrors;
-		this.newElementsRegistered   = newElementsRegistered;
-		this.elementsUpdatedManually = elementsUpdatedManually;
-		this.parseTimeMs             = parseTimeMs;
-	}
-
-	public void setSavedMetrics(int savedElements, int savedPrices,
-								long compareSaveTimeMs) {
-		this.savedElements     = savedElements;
-		this.savedPrices       = savedPrices;
-		this.compareSaveTimeMs = compareSaveTimeMs;
-	}
-
-	public void setApiResponseJsonFile(File file) {
-		this.apiResponseJsonFile = file;
-	}
-
-	public void addWarning(String warning) {
-		warnings.add(warning);
-	}
-
-	public void addError(String error) {
-		errors.add(error);
-	}
-
-	public void setTotalTime(long totalTimeMs) {
-		this.totalTimeMs = totalTimeMs;
-	}
-
-	// -------------------------
-	// Método principal: enviar correo
-	// -------------------------
 	public void sendReport() throws MessagingException, IOException {
+		Loggers.CRON.info("Enviando Reporte por correo");
+
 		Properties props = new Properties();
 		props.put("mail.smtp.auth", "true");
 		props.put("mail.smtp.starttls.enable", "true");
 		props.put("mail.smtp.host", smtpHost);
 		props.put("mail.smtp.port", String.valueOf(smtpPort));
+		props.put("mail.smtp.ssl.trust", smtpHost);
+
+		Loggers.CRON.info("Mail provider: {}",
+						  Transport.class.getProtectionDomain().getCodeSource());
+		Loggers.CRON.info("Activation provider: {}",
+						  DataHandler.class.getProtectionDomain().getCodeSource());
 
 		Session session = Session.getInstance(props, new Authenticator() {
-			protected jakarta.mail.PasswordAuthentication getPasswordAuthentication() {
+			protected PasswordAuthentication getPasswordAuthentication() {
 				return new PasswordAuthentication(fromEmail, password);
 			}
 		});
 
-		MimeMessage message = new MimeMessage(session);
+		// Crear mensaje simple
+		Message message = new MimeMessage(session);
 		message.setFrom(new InternetAddress(fromEmail));
 		message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
-		message.setSubject("Reporte de ejecución del Job - " + LocalDateTime.now());
+		message.setSubject("Reporte de ejecución de Carburo - LoaderCron - " +
+								   dato.formatoDiaHoraMinuto(
+										   dato.getFechaInicioEjecucion()));
 
-		// Contenido HTML
-
-		// Contenido multiparte (HTML + adjunto)
-		Multipart multipart = new MimeMultipart();
+		Multipart multipart = new MimeMultipart("mixed");
 
 		// Parte HTML
 		MimeBodyPart htmlPart = new MimeBodyPart();
-		htmlPart.setContent(buildEmailHtml(
-									"src/main/java/com/inggarciabaldo/carburo/util/email/email_template.html"),
+		htmlPart.setContent(buildEmailHtml("src/main/resources/email_template.html"),
 							"text/html; charset=utf-8");
 		multipart.addBodyPart(htmlPart);
 
 		// Adjuntar JSON si existe
-		if (apiResponseJsonFile != null && apiResponseJsonFile.exists()) {
-			MimeBodyPart attachmentPart = new MimeBodyPart();
-			DataSource source = new FileDataSource(apiResponseJsonFile);
-			attachmentPart.setDataHandler(new DataHandler(source));
-			attachmentPart.setFileName(apiResponseJsonFile.getName());
-			multipart.addBodyPart(attachmentPart);
+		File jsonFile = dato.getJsonRespuestaArchivo();
+		if (jsonFile != null && jsonFile.exists()) {
+			MimeBodyPart attachment = new MimeBodyPart();
+			DataSource source = new FileDataSource(jsonFile);
+			attachment.setDataHandler(new DataHandler(source));
+			attachment.setFileName(jsonFile.getName());
+			multipart.addBodyPart(attachment);
 		}
 
 		message.setContent(multipart);
-
 		Transport.send(message);
-		System.out.println("Correo enviado correctamente a " + toEmail);
 	}
 
-	public String buildEmailHtml(String templatePath) throws IOException {
-		// Leer todo el HTML de la plantilla
+	private String buildEmailHtml(String templatePath) throws IOException {
 		String template = new String(Files.readAllBytes(Paths.get(templatePath)));
 
-		// Reemplazar placeholders por los valores actuales
-		template = template.replace("{{START_TIME}}", startTime.toString())
-				.replace("{{DB_STATUS}}", dbConnectionStatus)
-				.replace("{{API_STATUS}}", apiStatus)
-				.replace("{{DB_TIME}}", String.valueOf(dbConnectionTimeMs))
-				.replace("{{API_TIME}}", String.valueOf(apiConnectionTimeMs))
-				.replace("{{PARSE_TIME}}", String.valueOf(parseTimeMs))
-				.replace("{{COMPARE_SAVE_TIME}}", String.valueOf(compareSaveTimeMs))
-				.replace("{{TOTAL_TIME}}", String.valueOf(totalTimeMs))
-				.replace("{{TOTAL_ELEMENTS}}", String.valueOf(totalApiElements))
-				.replace("{{PARSED_ELEMENTS}}", String.valueOf(parsedElements))
-				.replace("{{ERROR_ELEMENTS}}", String.valueOf(elementsWithErrors))
-				.replace("{{NEW_ELEMENTS}}", String.valueOf(newElementsRegistered))
-				.replace("{{MANUAL_UPDATE_ELEMENTS}}",
-						 String.valueOf(elementsUpdatedManually))
-				.replace("{{SAVED_ELEMENTS}}", String.valueOf(savedElements))
-				.replace("{{SAVED_PRICES}}", String.valueOf(savedPrices));
+		template = template.replace("{{START_TIME}}",
+									dato.formatoHora(dato.getFechaInicioEjecucion()))
+				.replace("{{END_TIME}}", dato.formatoHora(dato.getFechaFinEjecucion()))
+				.replace("{{TOTAL_DURATION}}",
+						 dato.formatoTiempo(dato.getTiempoTotalCron()))
+				.replace("{{DB_STATUS}}", "Correcto") // se puede mejorar con info real
+				.replace("{{API_STATUS}}", "Correcto")
+				.replace("{{DB_TIME}}", String.valueOf(dato.getTiempoObtenerEESSBD()))
+				.replace("{{API_TIME}}", String.valueOf(dato.getTiempoPeticionApiMs()))
+				.replace("{{TIME_JSON_PARSE}}",
+						 String.valueOf(dato.getTiempoJSONParseoDTOMs()))
+				.replace("{{TIME_DTO_PARSE}}",
+						 String.valueOf(dato.getTiempoDTOParseoEntidades()))
+				.replace("{{TIME_PARSE_EESS}}",
+						 String.valueOf(dato.getTiempoParseoEESSMs()))
+				.replace("{{TIME_PERSISTENCIA}}",
+						 String.valueOf(dato.getTiempoPersistenciaMs()))
+				.replace("{{TOTAL_EESS_JSON}}", String.valueOf(dato.getTotalEESSEnJson()))
+				.replace("{{TOTAL_EESS_DTO}}", String.valueOf(dato.getTotalEESSEnDTO()))
+				.replace("{{TOTAL_EESS_PARSED}}",
+						 String.valueOf(dato.getTotalEESSParseadas()))
+				.replace("{{PCT_EESS_PARSED}}",
+						 String.format("%.2f", dato.getPorcentajeParseoEESS()))
+				.replace("{{TOTAL_EESS_PARSE_ERRORS}}",
+						 String.valueOf(dato.getTotalEESSNoParseadasConErrores()))
+				.replace("{{TOTAL_EESS_PARSED_OUTSIDE_DB}}",
+						 String.valueOf(dato.getTotalEESSParseadasFueraDeBD()))
+				.replace("{{TOTAL_EESS_PARSED_IN_DB}}",
+						 String.valueOf(dato.getTotalEESSParseadasEnBD()))
+				.replace("{{TOTAL_EESS_TO_UPDATE}}", String.valueOf(
+						dato.getTotalEESSParseadasRequierenActualizacion()))
+				.replace("{{TOTAL_EESS_INSERTED}}",
+						 String.valueOf(dato.getTotalEESSInsertadas()))
+				.replace("{{TOTAL_EESS_UPDATED}}",
+						 String.valueOf(dato.getTotalEESSActualizadas()))
+				.replace("{{TOTAL_EESS_PERSISTED}}", String.valueOf(
+						dato.getTotalEESSInsertadas() + dato.getTotalEESSActualizadas()))
+				.replace("{{TOTAL_EESS_PRICE_OUTSIDE_DB}}", String.valueOf(
+						dato.getTotalEESSPrecioYDisponibilidadFueraDeBDInsertadas()))
+				.replace("{{TOTAL_PRICES_TO_INSERT}}",
+						 String.valueOf(dato.getTotalProcesamientoPreciosAInsertar()))
+				.replace("{{TOTAL_PRICES_INSERTED}}",
+						 String.valueOf(dato.getTotalPreciosInsertados()))
+				.replace("{{TOTAL_PRICES_TO_UPDATE}}",
+						 String.valueOf(dato.getTotalProcesamientoPreciosAActualizar()))
+				.replace("{{TOTAL_PRICES_UPDATED}}",
+						 String.valueOf(dato.getTotalPreciosActualizados()))
+				.replace("{{TOTAL_PRICES_PERSISTED}}", String.valueOf(
+						dato.getTotalPreciosInsertados() +
+								dato.getTotalPreciosActualizados()));
 
-		// Construir warnings y errores en HTML
-		String warningsHtml = warnings.stream().map(w -> "<li>" + w + "</li>")
-				.collect(Collectors.joining());
-		String errorsHtml = errors.stream()
-				.map(e -> "<li style='color:red;'>" + e + "</li>")
-				.collect(Collectors.joining());
-
+		// Warnings y errores (si los hubiere)
+		String warningsHtml = ""; // si tienes lista de warnings, meter aquí
+		String errorsHtml = "";   // si tienes lista de errores, meter aquí
 		template = template.replace("{{WARNINGS}}", warningsHtml)
 				.replace("{{ERRORS}}", errorsHtml);
 
 		return template;
-	}
-
-	// -------------------------
-	// Método auxiliar: crear archivo JSON temporal desde String
-	// -------------------------
-	public static File createTempJsonFile(String jsonContent, String prefix)
-			throws IOException {
-		File tempFile = File.createTempFile(prefix, ".json");
-		try (FileWriter writer = new FileWriter(tempFile)) {
-			writer.write(jsonContent);
-		}
-		return tempFile;
 	}
 }

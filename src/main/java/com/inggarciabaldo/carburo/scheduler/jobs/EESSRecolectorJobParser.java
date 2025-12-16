@@ -14,6 +14,7 @@ import com.inggarciabaldo.carburo.application.rest.parser.EETTReqResParser;
 import com.inggarciabaldo.carburo.config.cache.ApplicationCache;
 import com.inggarciabaldo.carburo.config.parser.deserialize.ESParserDTODeserializer;
 import com.inggarciabaldo.carburo.config.persistencia.jdbc.Jdbc;
+import com.inggarciabaldo.carburo.util.email.JobEmailSender;
 import com.inggarciabaldo.carburo.util.log.Loggers;
 import com.inggarciabaldo.carburo.util.properties.PropertyLoader;
 import org.json.JSONObject;
@@ -445,13 +446,20 @@ public class EESSRecolectorJobParser implements Job {
 		// Registro del resumen en el log
 		loggerCron.info(this.datoDeEjecucion.getInformeEjecucion());
 
-		//Envio de correo con el informe de la ejecución del
-		// TODO JobEmailSender emailSender = new JobEmailSender();
+		//Envío de correo con el informe de la ejecución del
+		boolean isReport = false;
+		try {
+			JobEmailSender emailSender = new JobEmailSender(datoDeEjecucion);
+			emailSender.sendReport();
+			isReport = true;
+		} catch (Exception e) {
+			loggerCron.error("Error enviando informe por correo: {}", e.getMessage(), e);
+		}
 
 		// Log indicando la finalización del cron y el estado del envío del correo
 		loggerCron.info(
 				"<<< CRON Finalizado >>> Hora de fin: {}. ¿Se ha enviado el informe por correo? {}.",
 				datoDeEjecucion.formatoHora(this.datoDeEjecucion.fechaFinEjecucion),
-				("No")); // TODO corregir condición
+				isReport ? "Sí" : "No");
 	}
 }

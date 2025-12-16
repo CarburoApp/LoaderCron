@@ -136,7 +136,7 @@ public class DatoDeEjecucion {
 	}
 
 
-	protected double getPorcentajeParseoEESS() {
+	public double getPorcentajeParseoEESS() {
 		if (totalEESSEnDTO == 0) return 0;
 		return (totalEESSParseadas * 100.0) / totalEESSEnDTO;
 	}
@@ -145,7 +145,7 @@ public class DatoDeEjecucion {
 	/**
 	 * Formatea milisegundos a minutos y segundos legibles
 	 */
-	private String formatoTiempo(long millis) {
+	public String formatoTiempo(long millis) {
 		Duration duration = Duration.ofMillis(millis);
 		long minutos = duration.toMinutes();
 		long segundos = duration.minusMinutes(minutos).getSeconds();
@@ -156,8 +156,12 @@ public class DatoDeEjecucion {
 	/**
 	 * Formatea hora legible
 	 */
-	protected String formatoHora(LocalDateTime fecha) {
+	public String formatoHora(LocalDateTime fecha) {
 		return fecha.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+	}
+
+	public String formatoDiaHoraMinuto(LocalDateTime fecha) {
+		return fecha.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
 	}
 
 
