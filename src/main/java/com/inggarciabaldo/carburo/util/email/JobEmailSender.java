@@ -15,23 +15,48 @@ import jakarta.mail.internet.MimeMultipart;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.util.Map;
 import java.util.Properties;
 
 /**
- * Clase encargada de registrar métricas y enviar un correo resumen
- * del resultado de un job de sincronización de datos.
+ * Responsable de construir y enviar el correo resumen
+ * de la ejecución de un Job Quartz.
  */
 public class JobEmailSender {
 
-	private static final PropertyLoader config = PropertyLoader.getInstance();
+	/* =======================
+	 * Constantes generales
+	 * ======================= */
 
-	private final String fromEmail = config.getApplicationProperty("mail.from");
-	private final String password = config.getApplicationProperty("mail.password");
-	private final String toEmail = config.getApplicationProperty("mail.to");
-	private final String smtpHost = config.getApplicationProperty("mail.smtp.host");
+	private static final String EMAIL_TEMPLATE_PATH = "src/main/resources/email_template.html";
+
+	private static final String MULTIPART_MIXED = "mixed";
+	private static final String CONTENT_TYPE_HTML_UTF8 = "text/html; charset=utf-8";
+
+	private static final String SUBJECT_PREFIX = "Reporte de ejecución de Carburo - LoaderCron - ";
+
+	private static final String MAIL_SMTP_AUTH = "mail.smtp.auth";
+	private static final String MAIL_SMTP_STARTTLS = "mail.smtp.starttls.enable";
+	private static final String MAIL_SMTP_HOST = "mail.smtp.host";
+	private static final String MAIL_SMTP_PORT = "mail.smtp.port";
+	private static final String MAIL_SMTP_SSL_TRUST = "mail.smtp.ssl.trust";
+
+	private static final String VALUE_TRUE = "true";
+	private static final String STATUS_OK = "Correcto";
+
+	/* =======================
+	 * Configuración mail
+	 * ======================= */
+
+	private static final PropertyLoader CONFIG = PropertyLoader.getInstance();
+
+	private final String fromEmail = CONFIG.getApplicationProperty("mail.from");
+	private final String password = CONFIG.getApplicationProperty("mail.password");
+	private final String toEmail = CONFIG.getApplicationProperty("mail.to");
+	private final String smtpHost = CONFIG.getApplicationProperty("mail.smtp.host");
 	private final int smtpPort = Integer.parseInt(
-			config.getApplicationProperty("mail.smtp.port"));
+			CONFIG.getApplicationProperty("mail.smtp.port"));
 
 	private final DatoDeEjecucion dato;
 
@@ -39,117 +64,188 @@ public class JobEmailSender {
 		this.dato = dato;
 	}
 
+	/* =======================
+	 * API pública
+	 * ======================= */
+
+	/**
+	 * Construye y envía el correo con el informe de ejecución.
+	 */
 	public void sendReport() throws MessagingException, IOException {
 		Loggers.CRON.info("Enviando Reporte por correo");
 
-		Properties props = new Properties();
-		props.put("mail.smtp.auth", "true");
-		props.put("mail.smtp.starttls.enable", "true");
-		props.put("mail.smtp.host", smtpHost);
-		props.put("mail.smtp.port", String.valueOf(smtpPort));
-		props.put("mail.smtp.ssl.trust", smtpHost);
+		Session session = createMailSession();
+		Message message = createBaseMessage(session);
 
-		Loggers.CRON.info("Mail provider: {}",
-						  Transport.class.getProtectionDomain().getCodeSource());
-		Loggers.CRON.info("Activation provider: {}",
-						  DataHandler.class.getProtectionDomain().getCodeSource());
-
-		Session session = Session.getInstance(props, new Authenticator() {
-			protected PasswordAuthentication getPasswordAuthentication() {
-				return new PasswordAuthentication(fromEmail, password);
-			}
-		});
-
-		// Crear mensaje simple
-		Message message = new MimeMessage(session);
-		message.setFrom(new InternetAddress(fromEmail));
-		message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
-		message.setSubject("Reporte de ejecución de Carburo - LoaderCron - " +
-								   dato.formatoDiaHoraMinuto(
-										   dato.getFechaInicioEjecucion()));
-
-		Multipart multipart = new MimeMultipart("mixed");
-
-		// Parte HTML
-		MimeBodyPart htmlPart = new MimeBodyPart();
-		htmlPart.setContent(buildEmailHtml("src/main/resources/email_template.html"),
-							"text/html; charset=utf-8");
-		multipart.addBodyPart(htmlPart);
-
-		// Adjuntar JSON si existe
-		File jsonFile = dato.getJsonRespuestaArchivo();
-		if (jsonFile != null && jsonFile.exists()) {
-			MimeBodyPart attachment = new MimeBodyPart();
-			DataSource source = new FileDataSource(jsonFile);
-			attachment.setDataHandler(new DataHandler(source));
-			attachment.setFileName(jsonFile.getName());
-			multipart.addBodyPart(attachment);
-		}
+		Multipart multipart = new MimeMultipart(MULTIPART_MIXED);
+		multipart.addBodyPart(buildHtmlBodyPart());
+		addJsonAttachmentIfExists(multipart);
 
 		message.setContent(multipart);
 		Transport.send(message);
 	}
 
-	private String buildEmailHtml(String templatePath) throws IOException {
-		String template = new String(Files.readAllBytes(Paths.get(templatePath)));
+	/* =======================
+	 * Construcción sesión
+	 * ======================= */
 
-		template = template.replace("{{START_TIME}}",
-									dato.formatoHora(dato.getFechaInicioEjecucion()))
-				.replace("{{END_TIME}}", dato.formatoHora(dato.getFechaFinEjecucion()))
-				.replace("{{TOTAL_DURATION}}",
-						 dato.formatoTiempo(dato.getTiempoTotalCron()))
-				.replace("{{DB_STATUS}}", "Correcto") // se puede mejorar con info real
-				.replace("{{API_STATUS}}", "Correcto")
-				.replace("{{DB_TIME}}", String.valueOf(dato.getTiempoObtenerEESSBD()))
-				.replace("{{API_TIME}}", String.valueOf(dato.getTiempoPeticionApiMs()))
-				.replace("{{TIME_JSON_PARSE}}",
-						 String.valueOf(dato.getTiempoJSONParseoDTOMs()))
-				.replace("{{TIME_DTO_PARSE}}",
-						 String.valueOf(dato.getTiempoDTOParseoEntidades()))
-				.replace("{{TIME_PARSE_EESS}}",
-						 String.valueOf(dato.getTiempoParseoEESSMs()))
-				.replace("{{TIME_PERSISTENCIA}}",
-						 String.valueOf(dato.getTiempoPersistenciaMs()))
-				.replace("{{TOTAL_EESS_JSON}}", String.valueOf(dato.getTotalEESSEnJson()))
-				.replace("{{TOTAL_EESS_DTO}}", String.valueOf(dato.getTotalEESSEnDTO()))
-				.replace("{{TOTAL_EESS_PARSED}}",
-						 String.valueOf(dato.getTotalEESSParseadas()))
-				.replace("{{PCT_EESS_PARSED}}",
-						 String.format("%.2f", dato.getPorcentajeParseoEESS()))
-				.replace("{{TOTAL_EESS_PARSE_ERRORS}}",
-						 String.valueOf(dato.getTotalEESSNoParseadasConErrores()))
-				.replace("{{TOTAL_EESS_PARSED_OUTSIDE_DB}}",
-						 String.valueOf(dato.getTotalEESSParseadasFueraDeBD()))
-				.replace("{{TOTAL_EESS_PARSED_IN_DB}}",
-						 String.valueOf(dato.getTotalEESSParseadasEnBD()))
-				.replace("{{TOTAL_EESS_TO_UPDATE}}", String.valueOf(
-						dato.getTotalEESSParseadasRequierenActualizacion()))
-				.replace("{{TOTAL_EESS_INSERTED}}",
-						 String.valueOf(dato.getTotalEESSInsertadas()))
-				.replace("{{TOTAL_EESS_UPDATED}}",
-						 String.valueOf(dato.getTotalEESSActualizadas()))
-				.replace("{{TOTAL_EESS_PERSISTED}}", String.valueOf(
-						dato.getTotalEESSInsertadas() + dato.getTotalEESSActualizadas()))
-				.replace("{{TOTAL_EESS_PRICE_OUTSIDE_DB}}", String.valueOf(
-						dato.getTotalEESSPrecioYDisponibilidadFueraDeBDInsertadas()))
-				.replace("{{TOTAL_PRICES_TO_INSERT}}",
-						 String.valueOf(dato.getTotalProcesamientoPreciosAInsertar()))
-				.replace("{{TOTAL_PRICES_INSERTED}}",
-						 String.valueOf(dato.getTotalPreciosInsertados()))
-				.replace("{{TOTAL_PRICES_TO_UPDATE}}",
-						 String.valueOf(dato.getTotalProcesamientoPreciosAActualizar()))
-				.replace("{{TOTAL_PRICES_UPDATED}}",
-						 String.valueOf(dato.getTotalPreciosActualizados()))
-				.replace("{{TOTAL_PRICES_PERSISTED}}", String.valueOf(
-						dato.getTotalPreciosInsertados() +
-								dato.getTotalPreciosActualizados()));
+	private Session createMailSession() {
+		Properties props = new Properties();
+		props.put(MAIL_SMTP_AUTH, VALUE_TRUE);
+		props.put(MAIL_SMTP_STARTTLS, VALUE_TRUE);
+		props.put(MAIL_SMTP_HOST, smtpHost);
+		props.put(MAIL_SMTP_PORT, String.valueOf(smtpPort));
+		props.put(MAIL_SMTP_SSL_TRUST, smtpHost);
 
-		// Warnings y errores (si los hubiere)
-		String warningsHtml = ""; // si tienes lista de warnings, meter aquí
-		String errorsHtml = "";   // si tienes lista de errores, meter aquí
-		template = template.replace("{{WARNINGS}}", warningsHtml)
-				.replace("{{ERRORS}}", errorsHtml);
+		return Session.getInstance(props, new Authenticator() {
+			@Override
+			protected PasswordAuthentication getPasswordAuthentication() {
+				return new PasswordAuthentication(fromEmail, password);
+			}
+		});
+	}
+
+
+	/* =======================
+	 * Construcción mensaje
+	 * ======================= */
+
+	private Message createBaseMessage(Session session) throws MessagingException {
+		Message message = new MimeMessage(session);
+		message.setFrom(new InternetAddress(fromEmail));
+		message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
+		message.setSubject(SUBJECT_PREFIX + dato.formatoDiaHoraMinuto(
+				dato.getFechaInicioEjecucion()));
+		return message;
+	}
+
+	private MimeBodyPart buildHtmlBodyPart() throws MessagingException, IOException {
+		MimeBodyPart htmlPart = new MimeBodyPart();
+		htmlPart.setContent(buildEmailHtml(), CONTENT_TYPE_HTML_UTF8);
+		return htmlPart;
+	}
+
+	private void addJsonAttachmentIfExists(Multipart multipart) throws MessagingException {
+
+		File jsonFile = dato.getJsonRespuestaArchivo();
+		if (jsonFile == null || !jsonFile.exists()) {
+			return;
+		}
+
+		MimeBodyPart attachment = new MimeBodyPart();
+		DataSource source = new FileDataSource(jsonFile);
+		attachment.setDataHandler(new DataHandler(source));
+		attachment.setFileName(jsonFile.getName());
+		multipart.addBodyPart(attachment);
+	}
+
+	/* =======================
+	 * Template HTML
+	 * ======================= */
+
+	private String buildEmailHtml() throws IOException {
+		String template = Files.readString(Path.of(EMAIL_TEMPLATE_PATH));
+
+		for (Map.Entry<String, String> entry : buildTemplateValues().entrySet()) {
+			template = template.replace(entry.getKey(), entry.getValue());
+		}
 
 		return template;
 	}
+
+	private Map<String, String> buildTemplateValues() {
+		return Map.ofEntries(Map.entry(PH_START_TIME,
+									   dato.formatoHora(dato.getFechaInicioEjecucion())),
+							 Map.entry(PH_END_TIME,
+									   dato.formatoHora(dato.getFechaFinEjecucion())),
+							 Map.entry(PH_TOTAL_DURATION,
+									   dato.formatoTiempo(dato.getTiempoTotalCron())),
+							 Map.entry(PH_DB_STATUS, STATUS_OK),
+							 Map.entry(PH_API_STATUS, STATUS_OK), Map.entry(PH_DB_TIME,
+																			String.valueOf(
+																					dato.getTiempoObtenerEESSBD())),
+							 Map.entry(PH_API_TIME,
+									   String.valueOf(dato.getTiempoPeticionApiMs())),
+							 Map.entry(PH_TIME_JSON_PARSE,
+									   String.valueOf(dato.getTiempoJSONParseoDTOMs())),
+							 Map.entry(PH_TIME_DTO_PARSE, String.valueOf(
+									 dato.getTiempoDTOParseoEntidades())),
+							 Map.entry(PH_TIME_PARSE_EESS,
+									   String.valueOf(dato.getTiempoParseoEESSMs())),
+							 Map.entry(PH_TIME_PERSISTENCIA,
+									   String.valueOf(dato.getTiempoPersistenciaMs())),
+							 Map.entry(PH_TOTAL_EESS_JSON,
+									   String.valueOf(dato.getTotalEESSEnJson())),
+							 Map.entry(PH_TOTAL_EESS_DTO,
+									   String.valueOf(dato.getTotalEESSEnDTO())),
+							 Map.entry(PH_TOTAL_EESS_PARSED,
+									   String.valueOf(dato.getTotalEESSParseadas())),
+							 Map.entry(PH_PCT_EESS_PARSED, String.format("%.2f",
+																		 dato.getPorcentajeParseoEESS())),
+							 Map.entry(PH_TOTAL_EESS_PARSE_ERRORS, String.valueOf(
+									 dato.getTotalEESSNoParseadasConErrores())),
+							 Map.entry(PH_TOTAL_EESS_PARSED_OUTSIDE_DB, String.valueOf(
+									 dato.getTotalEESSParseadasFueraDeBD())),
+							 Map.entry(PH_TOTAL_EESS_PARSED_IN_DB,
+									   String.valueOf(dato.getTotalEESSParseadasEnBD())),
+							 Map.entry(PH_TOTAL_EESS_TO_UPDATE, String.valueOf(
+									 dato.getTotalEESSParseadasRequierenActualizacion())),
+							 Map.entry(PH_TOTAL_EESS_INSERTED,
+									   String.valueOf(dato.getTotalEESSInsertadas())),
+							 Map.entry(PH_TOTAL_EESS_UPDATED,
+									   String.valueOf(dato.getTotalEESSActualizadas())),
+							 Map.entry(PH_TOTAL_EESS_PERSISTED, String.valueOf(
+									 dato.getTotalEESSInsertadas() +
+											 dato.getTotalEESSActualizadas())),
+							 Map.entry(PH_TOTAL_EESS_PRICE_OUTSIDE_DB, String.valueOf(
+									 dato.getTotalEESSPrecioYDisponibilidadFueraDeBDInsertadas())),
+							 Map.entry(PH_TOTAL_PRICES_TO_INSERT, String.valueOf(
+									 dato.getTotalProcesamientoPreciosAInsertar())),
+							 Map.entry(PH_TOTAL_PRICES_INSERTED,
+									   String.valueOf(dato.getTotalPreciosInsertados())),
+							 Map.entry(PH_TOTAL_PRICES_TO_UPDATE, String.valueOf(
+									 dato.getTotalProcesamientoPreciosAActualizar())),
+							 Map.entry(PH_TOTAL_PRICES_UPDATED, String.valueOf(
+									 dato.getTotalPreciosActualizados())),
+							 Map.entry(PH_TOTAL_PRICES_PERSISTED, String.valueOf(
+									 dato.getTotalPreciosInsertados() +
+											 dato.getTotalPreciosActualizados())),
+							 Map.entry(PH_WARNINGS, ""), Map.entry(PH_ERRORS, ""));
+	}
+
+	/* =======================
+	 * Placeholders template
+	 * ======================= */
+
+	private static final String PH_START_TIME = "{{START_TIME}}";
+	private static final String PH_END_TIME = "{{END_TIME}}";
+	private static final String PH_TOTAL_DURATION = "{{TOTAL_DURATION}}";
+	private static final String PH_DB_STATUS = "{{DB_STATUS}}";
+	private static final String PH_API_STATUS = "{{API_STATUS}}";
+	private static final String PH_DB_TIME = "{{DB_TIME}}";
+	private static final String PH_API_TIME = "{{API_TIME}}";
+	private static final String PH_TIME_JSON_PARSE = "{{TIME_JSON_PARSE}}";
+	private static final String PH_TIME_DTO_PARSE = "{{TIME_DTO_PARSE}}";
+	private static final String PH_TIME_PARSE_EESS = "{{TIME_PARSE_EESS}}";
+	private static final String PH_TIME_PERSISTENCIA = "{{TIME_PERSISTENCIA}}";
+	private static final String PH_TOTAL_EESS_JSON = "{{TOTAL_EESS_JSON}}";
+	private static final String PH_TOTAL_EESS_DTO = "{{TOTAL_EESS_DTO}}";
+	private static final String PH_TOTAL_EESS_PARSED = "{{TOTAL_EESS_PARSED}}";
+	private static final String PH_PCT_EESS_PARSED = "{{PCT_EESS_PARSED}}";
+	private static final String PH_TOTAL_EESS_PARSE_ERRORS = "{{TOTAL_EESS_PARSE_ERRORS}}";
+	private static final String PH_TOTAL_EESS_PARSED_OUTSIDE_DB = "{{TOTAL_EESS_PARSED_OUTSIDE_DB}}";
+	private static final String PH_TOTAL_EESS_PARSED_IN_DB = "{{TOTAL_EESS_PARSED_IN_DB}}";
+	private static final String PH_TOTAL_EESS_TO_UPDATE = "{{TOTAL_EESS_TO_UPDATE}}";
+	private static final String PH_TOTAL_EESS_INSERTED = "{{TOTAL_EESS_INSERTED}}";
+	private static final String PH_TOTAL_EESS_UPDATED = "{{TOTAL_EESS_UPDATED}}";
+	private static final String PH_TOTAL_EESS_PERSISTED = "{{TOTAL_EESS_PERSISTED}}";
+	private static final String PH_TOTAL_EESS_PRICE_OUTSIDE_DB = "{{TOTAL_EESS_PRICE_OUTSIDE_DB}}";
+	private static final String PH_TOTAL_PRICES_TO_INSERT = "{{TOTAL_PRICES_TO_INSERT}}";
+	private static final String PH_TOTAL_PRICES_INSERTED = "{{TOTAL_PRICES_INSERTED}}";
+	private static final String PH_TOTAL_PRICES_TO_UPDATE = "{{TOTAL_PRICES_TO_UPDATE}}";
+	private static final String PH_TOTAL_PRICES_UPDATED = "{{TOTAL_PRICES_UPDATED}}";
+	private static final String PH_TOTAL_PRICES_PERSISTED = "{{TOTAL_PRICES_PERSISTED}}";
+	private static final String PH_WARNINGS = "{{WARNINGS}}";
+	private static final String PH_ERRORS = "{{ERRORS}}";
+
 }
