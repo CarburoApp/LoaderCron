@@ -1,10 +1,13 @@
 package com.inggarciabaldo.carburo.application.service.eess;
 
 import com.inggarciabaldo.carburo.application.model.EstacionDeServicio;
+import com.inggarciabaldo.carburo.application.model.PrecioCombustible;
 import com.inggarciabaldo.carburo.application.service.util.dto.CombustibleDisponibleDTO;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface EESSCrudService {
@@ -21,6 +24,23 @@ public interface EESSCrudService {
 			Collection<EstacionDeServicio> estacionDeServicios);
 
 	/**
+	 * Inserta masivamente una colección de combustibles disponibles para estaciones de servicio.
+	 *
+	 * @param combustibleDisponibleDTOs Colección de DTOs de combustibles disponibles a insertar.
+	 * @return Número de combustibles disponibles insertados satisfactoriamente.
+	 */
+	int addAllCombustiblesDisponibles(
+			Collection<CombustibleDisponibleDTO> combustibleDisponibleDTOs);
+
+	/**
+	 * Inserta masivamente una colección de precios de combustibles.
+	 *
+	 * @param precioCombustibles Colección de precios de combustibles a insertar.
+	 * @return Número de precios de combustibles insertados satisfactoriamente.
+	 */
+	int addAllPrecioCombustibles(Collection<PrecioCombustible> precioCombustibles);
+
+	/**
 	 * Actualiza una estación de servicio. Se da por hecho que en la estación de servicio
 	 * ya existe en la base de datos y contiene todos los datos ya validados y es completo.
 	 * <p>
@@ -30,6 +50,14 @@ public interface EESSCrudService {
 	 * @return Estación de servicio actualizada. Null en caso de fallo.
 	 */
 	EstacionDeServicio updateEESS(EstacionDeServicio estacionDeServicio);
+
+	/**
+	 * Actualiza masivamente una colección de precios de combustibles.
+	 *
+	 * @param precioCombustibles Colección de precios de combustibles a insertar.
+	 * @return Número de precios de combustibles insertados satisfactoriamente.
+	 */
+	int updateAllPrecioCombustibles(Collection<PrecioCombustible> precioCombustibles);
 
 	Optional<EstacionDeServicio> findEESSById(String id);
 
@@ -50,4 +78,14 @@ public interface EESSCrudService {
 	 */
 	Collection<CombustibleDisponibleDTO> findAllCombustiblesDisponiblesByEESSCollectionIds(
 			Collection<Integer> eessIds);
+
+	/**
+	 * Obtiene todos los precios de combustibles para un conjunto de estaciones de servicio en una fecha concreta (diaria).
+	 *
+	 * @param eessIds Map de IDs y de estaciones de servicio.
+	 * @param fecha   {@link LocalDate} fecha a nivel de día para la que se obtendrán los registros.
+	 * @return {@link Collection} de DTOs de precios de combustibles en la BD para eeess y fecha dada.
+	 */
+	Collection<PrecioCombustible> findAllPrecioCombustibleByEESSCollectionIdsAndFecha(
+			Map<Integer, EstacionDeServicio> eessIds, LocalDate fecha);
 }

@@ -52,7 +52,7 @@ public class PrecioCombustibleGatewayImpl implements PrecioCombustibleGateway {
 
 			try (PreparedStatement pst = c.prepareStatement(sql)) {
 				pst.setShort(1, record.idCombustible);
-				pst.setInt(2, record.idEess);
+				pst.setInt(2, record.idEESS);
 				pst.setDate(3, record.fecha);
 				pst.setDouble(4, record.precio);
 				pst.executeUpdate();
@@ -77,7 +77,7 @@ public class PrecioCombustibleGatewayImpl implements PrecioCombustibleGateway {
 			for (PrecioCombustibleRecord record : coleccionPreciosCombustibles)
 				try (PreparedStatement pst = c.prepareStatement(sql)) {
 					pst.setShort(1, record.idCombustible);
-					pst.setInt(2, record.idEess);
+					pst.setInt(2, record.idEESS);
 					pst.setDate(3, record.fecha);
 					pst.setDouble(4, record.precio);
 					pst.executeUpdate();
@@ -98,7 +98,7 @@ public class PrecioCombustibleGatewayImpl implements PrecioCombustibleGateway {
 			try (PreparedStatement pst = c.prepareStatement(sql)) {
 				pst.setDouble(1, record.precio);
 				pst.setShort(2, record.idCombustible);
-				pst.setInt(3, record.idEess);
+				pst.setInt(3, record.idEESS);
 				pst.setDate(4, record.fecha);
 				pst.executeUpdate();
 			}
@@ -115,7 +115,7 @@ public class PrecioCombustibleGatewayImpl implements PrecioCombustibleGateway {
 
 			try (PreparedStatement pst = c.prepareStatement(sql)) {
 				pst.setShort(1, record.idCombustible);
-				pst.setInt(2, record.idEess);
+				pst.setInt(2, record.idEESS);
 				pst.setDate(3, record.fecha);
 				pst.executeUpdate();
 			}

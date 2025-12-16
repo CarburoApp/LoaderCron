@@ -2,8 +2,6 @@ package com.inggarciabaldo.carburo.application.model;
 
 import lombok.Getter;
 
-import java.io.Serial;
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -14,10 +12,7 @@ import java.util.Objects;
  * en una fecha determinada.
  */
 @Getter
-public class PrecioCombustible implements Serializable {
-
-	@Serial
-	private static final long serialVersionUID = 1L;
+public class PrecioCombustible {
 
 	// ==============================
 	// CONSTANTES

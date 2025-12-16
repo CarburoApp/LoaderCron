@@ -87,7 +87,7 @@ public class EntityAssembler {
 			PrecioCombustible entity) {
 		PrecioCombustibleRecord m = new PrecioCombustibleRecord();
 		m.idCombustible = entity.getCombustible().getId();
-		m.idEess        = entity.getEstacionDeServicio().getId();
+		m.idEESS        = entity.getEstacionDeServicio().getId();
 		m.fecha         = Date.valueOf(entity.getFecha());
 		m.precio        = entity.getPrecio();
 		return m;

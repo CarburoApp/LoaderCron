@@ -9,6 +9,7 @@ import com.inggarciabaldo.carburo.application.service.util.dto.CombustibleDispon
 import com.inggarciabaldo.carburo.util.log.Loggers;
 import org.slf4j.Logger;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -179,7 +180,7 @@ public class ProcesadoDePersistenciaEESSaBD {
 				if (!collectionDisponibilidad.isEmpty()) doInsertDisponibilidadCombustibles(
 						collectionDisponibilidad);
 				else loggerCron.info(
-						"COLECCIÓN de combustibles disponibles a introducir está VACÍA. No se requiere persistir la disponibilidad de ningún combustible.");
+						"COLECCIÓN de combustibles disponibles de EESS que ya se encontraban en la BD a INSERTAR está VACÍA. No se requiere persistir la disponibilidad de ningún combustible.");
 
 			} catch (Exception e) {
 				IllegalStateException exp = new IllegalStateException(
@@ -191,26 +192,35 @@ public class ProcesadoDePersistenciaEESSaBD {
 				throw exp;
 			}
 
-			// 9. Definimos los precios a insertar de las eess de entre las que están en BD
-			collectionPreciosAInsertar = getPrecioCombustibleAInsertar(
-					coleccionEESSPresentesEnBD);
+			try {
+				// 9. Definimos los precios a insertar de las eess de entre las que están en BD
+				collectionPreciosAInsertar = getPrecioCombustibleAInsertar(
+						coleccionEESSPresentesEnBD);
 
-			// 10. Persistimos los precios obtenidos
-			if (!collectionPreciosAInsertar.isEmpty()) doInsertPrecioCombustibles(
-					collectionPreciosAInsertar);
-			else loggerCron.info(
-					"COLECCIÓN de precios de combustibles de EESS que ya se encontraban en la BD a INSERTAR está VACÍA. No se requiere persistir ningún precio.");
+				// 10. Persistimos los precios obtenidos
+				if (!collectionPreciosAInsertar.isEmpty()) doInsertPrecioCombustibles(
+						collectionPreciosAInsertar);
+				else loggerCron.info(
+						"COLECCIÓN de precios de combustibles de EESS que ya se encontraban en la BD a INSERTAR está VACÍA. No se requiere persistir ningún precio.");
 
-			// 11. Definimos los precios a actualizar de las eess de entre las que están en BD
-			collectionPreciosAActualizar = getPrecioCombustibleAActualizar(
-					coleccionEESSPresentesEnBD);
+				// 11. Definimos los precios a actualizar de las eess de entre las que están en BD
+				collectionPreciosAActualizar = getPrecioCombustibleAActualizar(
+						coleccionEESSPresentesEnBD);
 
-			// 12. Actualizamos los precios obtenidos
-			if (!collectionPreciosAActualizar.isEmpty()) doUpdatePrecioCombustibles(
-					collectionPreciosAActualizar);
-			else loggerCron.info(
-					"COLECCIÓN de precios de combustibles de EESS que ya se encontraban en la BD que requieren de ACTUALIZACIÓN está VACÍA. No se requiere actualizar ningún precio.");
-
+				// 12. Actualizamos los precios obtenidos
+				if (!collectionPreciosAActualizar.isEmpty()) doUpdatePrecioCombustibles(
+						collectionPreciosAActualizar);
+				else loggerCron.info(
+						"COLECCIÓN de precios de combustibles de EESS que ya se encontraban en la BD que requieren de ACTUALIZACIÓN está VACÍA. No se requiere actualizar ningún precio.");
+			} catch (Exception e) {
+				IllegalStateException exp = new IllegalStateException(
+						"Error inesperado al intentar procesar o persistir los Precios de los combustibles de las EESS que ya están en BD. Por tanto no se ha podido completar el proceso de procesamiento.",
+						e);
+				loggerCron.error(
+						"Error en procesamiento y persistencia de los precios de los combustibles  de eess que ya se encuentran en la BD. {}",
+						e.getMessage(), e);
+				throw exp;
+			}
 		} else loggerCron.info(
 				"COLECCIÓN de EESS parseadas que ya se encontraría en BD está VACÍA. No se requieren acciones sobre la disponibilidad o precios de combustibles de estas EESS.");
 
@@ -410,7 +420,7 @@ public class ProcesadoDePersistenciaEESSaBD {
 		long tiempoInicio = System.currentTimeMillis();
 
 		for (EstacionDeServicio eess : coleccionEESSaActualizar) {
-			//servicioEESS.updateEESS(eess); TODO
+			servicioEESS.updateEESS(eess);
 			datoDeEjecucion.totalEESSActualizadas++;
 		}
 		datoDeEjecucion.setTiempoPersistenciaEESSActualizacion(
@@ -453,6 +463,7 @@ public class ProcesadoDePersistenciaEESSaBD {
 
 		// Medición del tiempo de procesamiento
 		long tiempoInicio = System.currentTimeMillis();
+		int totalDisponibilidad;
 		Collection<CombustibleDisponibleDTO> disponibilidadDeCombutible;
 		{
 			// Transformamos las disponibilidades de las EESS parseadas a DTOs de CombustibleDisponibleDTO
@@ -462,6 +473,7 @@ public class ProcesadoDePersistenciaEESSaBD {
 					listaCombDispParseados.add(
 							new CombustibleDisponibleDTO(combustible.getId(),
 														 eess.getId()));
+			totalDisponibilidad = listaCombDispParseados.size();
 
 			// Map de EESS-ID a lista de DTOs DE OBJETOS PARSEADOS para optimizar la búsqueda
 			Map<Integer, List<CombustibleDisponibleDTO>> mapCombDispPARSEADOXIdEess = listaCombDispParseados.stream()
@@ -492,211 +504,254 @@ public class ProcesadoDePersistenciaEESSaBD {
 		datoDeEjecucion.setTotalProcesamientoDisponibilidadAInsertar(
 				disponibilidadDeCombutible.size());
 		loggerCron.info(
-				"PROCESADAS {} EESS susceptibles de definir objetos Combustible-Disponible a INSERTAR. Se concluye que {} objetos Combustible-Disponible lo requieren. En {} ms. ",
-				datoDeEjecucion.getTotalEESSParseadasEnBD(),
+				"PROCESADOS {} objetos Combustible-Disponible susceptibles de necesitar ser INSERTAR en las EESS que ya se encontraban en BD ({}). Se concluye que {} objetos Combustible-Disponible lo requieren. En {} ms. ",
+				totalDisponibilidad, datoDeEjecucion.getTotalEESSParseadasFueraDeBD(),
 				datoDeEjecucion.getTotalProcesamientoDisponibilidadAInsertar(),
 				datoDeEjecucion.getTiempoProcesamientoDisponibilidadDeCombustiblesAInsertar());
 
 		return disponibilidadDeCombutible;
 	}
 
+	/**
+	 * Encargado de realizar la inserción masiva de objetos de {@link CombustibleDisponibleDTO}.
+	 *
+	 * @param collectionDisponibilidad {@link Collection} que contiene los objetos a insertar
+	 */
 	private void doInsertDisponibilidadCombustibles(
 			Collection<CombustibleDisponibleDTO> collectionDisponibilidad) {
-		// TODO
+		if (collectionDisponibilidad == null) throw new IllegalArgumentException(
+				"No se pueden INSERTAR objetos Combustible-Disponible si la COLECCIÓN es NULA.");
+		if (collectionDisponibilidad.isEmpty()) {
+			loggerCron.warn(
+					"COLECCIÓN de Combustible-Disponible a INSERTAR VACÍA. NO se ha INSERTADO ningÚn Combustible-Disponible.");
+			// Los valores de datoDeEjecucion ya están a 0 por defecto
+			return;
+		}
+
+		// Insertamos todos los estaciones de servicio en bloque
+		{
+			long tiempoInicio = System.currentTimeMillis();
+			datoDeEjecucion.setTotalPersistenciaDisponibilidad(
+					servicioEESS.addAllCombustiblesDisponibles(collectionDisponibilidad));
+			datoDeEjecucion.setTiempoPersistenciaInsertarDisponibilidadDeCombustibles(
+					System.currentTimeMillis() - tiempoInicio);
+		}
+
+		// Definir el total de objetos disponibilidad-combustible insertados correctamente, y el tiempo usado
+		loggerCron.info(
+				"INSERTADAS correctamente {} objetos Combustible-Disponible que no estaban en la BD de los {} planteadas en {} ms.",
+				datoDeEjecucion.getTotalPersistenciaDisponibilidad(),
+				collectionDisponibilidad.size(),
+				datoDeEjecucion.getTiempoPersistenciaInsertarDisponibilidadDeCombustibles());
 	}
 
 	private Collection<PrecioCombustible> getPrecioCombustibleAInsertar(
 			Collection<EstacionDeServicio> eessAComprobarPrecios) {
-		return List.of(); // TODO
+		// Comprobaciones
+		if (eessAComprobarPrecios == null) throw new IllegalArgumentException(
+				"No se puede definir objetos Precio-Combustible si la COLECCIÓN de EESS en BD es NULA.");
+
+		if (eessAComprobarPrecios.isEmpty()) {
+			loggerCron.warn(
+					"COLECCIÓN de EESS que se encuentran en BD se encuentra VACÍA. No se requiere definir ningún Precio-Combustible.");
+			// Los valores de datoDeEjecucion ya están a 0 por defecto
+			return List.of();
+		}
+
+		final LocalDate fecha = datoDeEjecucion.getFechaDeParser();
+		int totalPreciosPosiblesAInsertar;
+		Collection<PrecioCombustible> precioCombustiblesAInsertar;
+
+		// Medición del tiempo de procesamiento
+		long tiempoInicio = System.currentTimeMillis();
+		{
+			// 1.  Transformamos las disponibilidades de las EESS parseadas a objetos de PrecioCombustible del día del Parseo
+			List<PrecioCombustible> listaPrecioCombustibleParseados = eessAComprobarPrecios.stream()
+					.flatMap(eess -> eess.getPreciosCombustibles().stream())
+					.filter(pc -> fecha.equals(pc.getFecha())).toList();
+			totalPreciosPosiblesAInsertar = listaPrecioCombustibleParseados.size();
+
+			// 2. IDs de EESS implicada
+			Map<Integer, EstacionDeServicio> mapIdsEessParseadas = listaPrecioCombustibleParseados.stream()
+					.collect(Collectors.toMap(pc -> pc.getEstacionDeServicio().getId(),
+											  PrecioCombustible::getEstacionDeServicio,
+											  (existing, replacement) -> existing));
+
+
+			// 3. Precios ya existentes en BD para esas EESS y fecha
+			Collection<PrecioCombustible> precioCombustiblesEnBD = servicioEESS.findAllPrecioCombustibleByEESSCollectionIdsAndFecha(
+					mapIdsEessParseadas, fecha);
+
+			// Creamos un set con claves DE OBJETOS DE LA BD para rápida comprobación
+			// 4. Mapa de BD: EESS_ID -> Set<Combustible> ya que así tenemos las 3 claves primarias
+			// -- Fecha (dada), idEess es la clave Integer y el combustible. Fecha fija, y map eeess -> Comb
+			Map<Integer, Set<Combustible>> mapCombustiblesEnBDXIdEess = precioCombustiblesEnBD.stream()
+					.collect(Collectors.groupingBy(
+							pc -> pc.getEstacionDeServicio().getId(),
+							Collectors.mapping(PrecioCombustible::getCombustible,
+											   Collectors.toSet())));
+
+			// 5. Filtramos los precios parseados que NO están en BD
+			precioCombustiblesAInsertar = listaPrecioCombustibleParseados.stream()
+					.filter(pc -> {
+						Set<Combustible> combustiblesEnBD = mapCombustiblesEnBDXIdEess.get(
+								pc.getEstacionDeServicio().getId());
+
+						return combustiblesEnBD == null ||
+								!combustiblesEnBD.contains(pc.getCombustible());
+					}).toList();
+		}
+
+		datoDeEjecucion.setTiempoProcesamientoPreciosDeCombustiblesAInsertar(
+				System.currentTimeMillis() - tiempoInicio);
+
+		datoDeEjecucion.setTotalProcesamientoPreciosAInsertar(
+				precioCombustiblesAInsertar.size());
+		loggerCron.info(
+				"PROCESADOS {} objetos Precio-Combustible susceptibles de necesitar ser INSERTAR en las EESS que ya se encontraban en BD ({}). Se concluye que {} objetos Precio-Combustible lo requieren. En {} ms. ",
+				totalPreciosPosiblesAInsertar,
+				datoDeEjecucion.getTotalEESSParseadasFueraDeBD(),
+				datoDeEjecucion.getTotalProcesamientoPreciosAInsertar(),
+				datoDeEjecucion.getTiempoProcesamientoDisponibilidadDeCombustiblesAInsertar());
+
+		return precioCombustiblesAInsertar;
 	}
 
+	/**
+	 * Encargado de realizar la inserción masiva de objetos de {@link PrecioCombustible}.
+	 *
+	 * @param preciosAInsertar {@link Collection} con los objetos a insertar.
+	 */
 	private void doInsertPrecioCombustibles(
 			Collection<PrecioCombustible> preciosAInsertar) {
-		// TODO
+		if (preciosAInsertar == null) throw new IllegalArgumentException(
+				"No se pueden INSERTAR objetos Precio-Combustible si la COLECCIÓN es NULA.");
+		if (preciosAInsertar.isEmpty()) {
+			loggerCron.warn(
+					"COLECCIÓN de Precio-Combustible a INSERTAR VACÍA. NO se ha INSERTADO ningÚn Precio-Combustible.");
+			// Los valores de datoDeEjecucion ya están a 0 por defecto
+			return;
+		}
+
+		// Insertamos todos los precios en bloque
+		{
+			long tiempoInicio = System.currentTimeMillis();
+			datoDeEjecucion.setTotalPersistenciaInsertarPrecios(
+					servicioEESS.addAllPrecioCombustibles(preciosAInsertar));
+			datoDeEjecucion.setTiempoProcesamientoPreciosDeCombustiblesAInsertar(
+					System.currentTimeMillis() - tiempoInicio);
+		}
+
+		// Definir el total de precios insertados correctamente, y el tiempo usado
+		loggerCron.info(
+				"INSERTADAS correctamente {} objetos Precio-Combustible que no estaban en la BD de los {} planteadas en {} ms.",
+				datoDeEjecucion.getTotalPersistenciaInsertarPrecios(),
+				preciosAInsertar.size(),
+				datoDeEjecucion.getTiempoProcesamientoPreciosDeCombustiblesAInsertar());
 	}
 
 	private Collection<PrecioCombustible> getPrecioCombustibleAActualizar(
-			Collection<EstacionDeServicio> preciosAActualizar) {
-		return List.of(); // TODO
+			Collection<EstacionDeServicio> eessAComprobarPrecios) {
+		// Comprobaciones
+		if (eessAComprobarPrecios == null) throw new IllegalArgumentException(
+				"No se puede definir objetos Precio-Combustible si la COLECCIÓN de EESS en BD es NULA.");
+
+		if (eessAComprobarPrecios.isEmpty()) {
+			loggerCron.warn(
+					"COLECCIÓN de EESS que se encuentran en BD se encuentra VACÍA. No se requiere definir ningún Precio-Combustible.");
+			// Los valores de datoDeEjecucion ya están a 0 por defecto
+			return List.of();
+		}
+
+		final LocalDate fecha = datoDeEjecucion.getFechaDeParser();
+
+		// Medición del tiempo de procesamiento
+		long tiempoInicio = System.currentTimeMillis();
+		int totalPreciosAActualizar;
+		Collection<PrecioCombustible> precioCombustiblesAActualizar;
+		{
+			// 1.  Transformamos las disponibilidades de las EESS parseadas a objetos de PrecioCombustible del día del Parseo
+			List<PrecioCombustible> listaPrecioCombustibleParseados = eessAComprobarPrecios.stream()
+					.flatMap(eess -> eess.getPreciosCombustibles().stream())
+					.filter(pc -> fecha.equals(pc.getFecha())).toList();
+			totalPreciosAActualizar = listaPrecioCombustibleParseados.size();
+
+			// 2. IDs de EESS implicadas
+			Map<Integer, EstacionDeServicio> mapIdsEessParseadas = listaPrecioCombustibleParseados.stream()
+					.collect(Collectors.toMap(pc -> pc.getEstacionDeServicio().getId(),
+											  PrecioCombustible::getEstacionDeServicio,
+											  (existing, replacement) -> existing));
+
+			// 3. Precios ya existentes en BD para esas EESS y fecha
+			Collection<PrecioCombustible> precioCombustiblesEnBD = servicioEESS.findAllPrecioCombustibleByEESSCollectionIdsAndFecha(
+					mapIdsEessParseadas, fecha);
+
+			// 4. Mapa BD: EESS_ID -> (Combustible -> PrecioCombustible BD) ya que así tenemos las 3 claves primarias y el precio
+			// -- Fecha (dada), idEess es la clave Integer y el combustible. Fecha fija, y map eeess -> map_Comb -> precio
+			Map<Integer, Map<Combustible, PrecioCombustible>> mapPrecioBDXIdEess = precioCombustiblesEnBD.stream()
+					.collect(Collectors.groupingBy(
+							pc -> pc.getEstacionDeServicio().getId(),
+							Collectors.toMap(PrecioCombustible::getCombustible,
+											 pc -> pc)));
+
+			// 5. Filtramos los precios parseados que EXISTEN en BD y tienen PRECIO DISTINTO
+			precioCombustiblesAActualizar = listaPrecioCombustibleParseados.stream()
+					.filter(pcParseado -> {
+						Map<Combustible, PrecioCombustible> preciosBDPorComb = mapPrecioBDXIdEess.get(
+								pcParseado.getEstacionDeServicio().getId());
+						if (preciosBDPorComb == null) return false;
+						PrecioCombustible pcBD = preciosBDPorComb.get(
+								pcParseado.getCombustible());
+						return pcBD != null && Double.compare(pcBD.getPrecio(),
+															  pcParseado.getPrecio()) !=
+								0;
+					}).toList();
+		}
+
+		datoDeEjecucion.setTiempoProcesamientoPreciosDeCombustiblesAActualizar(
+				System.currentTimeMillis() - tiempoInicio);
+
+		datoDeEjecucion.setTotalProcesamientoPreciosAInsertar(
+				precioCombustiblesAActualizar.size());
+		loggerCron.info(
+				"PROCESADOS {} objetos Precio-Combustible susceptibles de necesitar ser ACTUALIZADOS en las EESS que ya se encontraban en BD ({}). Se concluye que {} objetos Precio-Combustible lo requieren. En {} ms. ",
+				totalPreciosAActualizar, datoDeEjecucion.getTotalEESSParseadasFueraDeBD(),
+				datoDeEjecucion.getTotalProcesamientoPreciosAActualizar(),
+				datoDeEjecucion.getTiempoProcesamientoPreciosDeCombustiblesAActualizar());
+
+		return precioCombustiblesAActualizar;
 	}
 
+	/**
+	 * Encargado de realizar la actualización masiva de objetos de {@link CombustibleDisponibleDTO}.
+	 *
+	 * @param preciosAActualizar {@link Collection} con los objetos a actualizar.
+	 */
 	private void doUpdatePrecioCombustibles(
-			Collection<PrecioCombustible> collectionDisponibilidad) {
-		// TODO
+			Collection<PrecioCombustible> preciosAActualizar) {
+		if (preciosAActualizar == null) throw new IllegalArgumentException(
+				"No se pueden ACTUALIZAR objetos Precio-Combustible si la COLECCIÓN es NULA.");
+		if (preciosAActualizar.isEmpty()) {
+			loggerCron.warn(
+					"COLECCIÓN de Precio-Combustible a ACTUALIZAR VACÍA. NO se ha ACTUALIZADO ningÚn Precio-Combustible.");
+			// Los valores de datoDeEjecucion ya están a 0 por defecto
+			return;
+		}
+
+		// Actualizamos todos los precios en bloque
+		{
+			long tiempoInicio = System.currentTimeMillis();
+			datoDeEjecucion.setTotalPersistenciaActualizarPrecios(
+					servicioEESS.updateAllPrecioCombustibles(preciosAActualizar));
+			datoDeEjecucion.setTiempoPersistenciaActualizarPreciosDeCombustibles(
+					System.currentTimeMillis() - tiempoInicio);
+		}
+
+		// Definir el total de precios actualizados correctamente, y el tiempo usado
+		loggerCron.info(
+				"ACTUALIZADOS correctamente {} objetos Precio-Combustible que no estaban en la BD de los {} planteadas en {} ms.",
+				datoDeEjecucion.getTotalPersistenciaActualizarPrecios(),
+				preciosAActualizar.size(),
+				datoDeEjecucion.getTiempoPersistenciaActualizarPreciosDeCombustibles());
 	}
-
-
-	//	private void persistirBatch(List<ES> listaES) { TODO
-	//		// ===========================
-	//		// Configuración de batch y multihilo
-	//		// ===========================
-	//		int numHilos = 4;       // número de hilos concurrentes, seguro para Supabase/Postgres
-	//		int batchSize = 100;    // flush/clear cada 100 entidades
-	//		int chunkSize = 200;    // tamaño de cada chunk que procesa un hilo
-	//
-	//		ExecutorService executor = Executors.newFixedThreadPool(numHilos);
-	//		List<Future<?>> futures = new ArrayList<>();
-	//
-	//		// ===========================
-	//		// Dividir la lista en chunks
-	//		// ===========================
-	//		for (int i = 0; i < listaES.size(); i += chunkSize) {
-	//			int from = i;
-	//			int to = Math.min(i + chunkSize, listaES.size());
-	//			// Crear copia para evitar problemas con subList concurrente
-	//			List<ES> chunk = new ArrayList<>(listaES.subList(from, to));
-	//
-	//			// ===========================
-	//			// Procesar cada chunk en un hilo
-	//			// ===========================
-	//			futures.add(executor.submit(() -> {
-	//				EntityManager em = JPAUtil.getEntityManager();
-	//				EntityTransaction tx = null;
-	//
-	//				try {
-	//					tx = em.getTransaction();
-	//					tx.begin();
-	//					int count = 0;
-	//
-	//					for (ES ES : chunk) {
-	//						// Persistir o actualizar según corresponda
-	//						if (ES.getId() == null) {
-	//							em.persist(ES);
-	//						} else {
-	//							em.merge(ES);
-	//						}
-	//
-	//						// Flush y clear por batch
-	//						if (++count % batchSize == 0) {
-	//							em.flush();
-	//							em.clear(); // cuidado: relaciones desasociadas
-	//						}
-	//
-	//						// Opcional: persistencia de precios si se requiere
-	//						// for (PrecioCombustible precio : eess.getPrecios()) {
-	//						//     if (precio.getId() == null) em.persist(precio);
-	//						//     else em.merge(precio);
-	//						// }
-	//					}
-	//
-	//					tx.commit();
-	//					loggerCron.info(
-	//							"Chunk persistido correctamente. Estaciones procesadas en este hilo: {}",
-	//							chunk.size());
-	//
-	//				} catch (Exception e) {
-	//					if (tx != null && tx.isActive()) tx.rollback();
-	//					loggerCron.error("Error persistiendo chunk. Transacción abortada: {}",
-	//									 e.getMessage(), e);
-	//
-	//				} finally {
-	//					if (em.isOpen()) em.close(); // cierre seguro del EntityManager
-	//				}
-	//			}));
-	//		}
-	//
-	//		// ===========================
-	//		// Esperar a que todos los hilos terminen
-	//		// ===========================
-	//		for (Future<?> f : futures) {
-	//			try {
-	//				f.get(); // bloquea hasta que termine cada hilo
-	//			} catch (InterruptedException | ExecutionException e) {
-	//				loggerCron.error("Error en hilo de persistencia: {}", e.getMessage(), e);
-	//			}
-	//		}
-	//
-	//		executor.shutdown();
-	//		loggerCron.info("Persistencia multihilo completada. Total estaciones: {}",
-	//						listaES.size());
-	//	}
-
-	//	public List<ES> parseAll(JSONObject json) {
-	//		List<ES> resultado = new ArrayList<>();
-	//		List<JSONObject> fallidos = new ArrayList<>();
-	//
-	//		LocalDate fecha = parseFecha(json);
-	//		JSONArray listaEESS = json.optJSONArray(
-	//				propertyLoader.getJsonKeyProperty("lista.eess.precio"));
-	//		if (listaEESS == null) return resultado;
-	//
-	//		int totalItems = listaEESS.length();
-	//		parseLog.info("<<< Inicio del parseado de EESS >>> Total: {}", totalItems);
-	//
-	//		// Crear pool de hilos seguro
-	//		int numHilos = Math.min(Runtime.getRuntime().availableProcessors(),
-	//								Integer.parseInt(propertyLoader.getApplicationProperty(
-	//										"parser.max.threads")));
-	//
-	//		ExecutorService executor = Executors.newFixedThreadPool(numHilos);
-	//
-	//		//		try {
-	//		//			List<CompletableFuture<Void>> futures = new ArrayList<>();
-	//		//
-	//		//			for (int i = 0; i < totalItems; i++) {
-	//		//				final int index = i;
-	//		//				final JSONObject item = listaEESS.getJSONObject(i);
-	//		//
-	//		//				CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-	//		//					try {
-	//		//						ES ES = eessParser.parse(item, fecha);
-	//		//						if (ES != null) {
-	//		//							synchronized (resultado) {
-	//		//								resultado.add(ES);
-	//		//							}
-	//		//						}
-	//		//					} catch (Exception e) {
-	//		//						synchronized (fallidos) {
-	//		//							fallidos.add(item);
-	//		//						}
-	//		//						parseLog.error("Error al parsear estación json {}: {}",
-	//		//									   item.toString(), e.getMessage(), e);
-	//		//					}
-	//		//				}, executor);
-	//		//
-	//		//				futures.add(future);
-	//		//			}
-	//		//
-	//		//			// Esperar que todos terminen
-	//		//			CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-	//		//
-	//		//		} finally {
-	//		//			// Cerrar correctamente los hilos
-	//		//			executor.shutdown();
-	//		//			try {
-	//		//				if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-	//		//					executor.shutdownNow();
-	//		//				}
-	//		//			} catch (InterruptedException e) {
-	//		//				executor.shutdownNow();
-	//		//				Thread.currentThread().interrupt();
-	//		//			}
-	//		//		}
-	//
-	//		// Resumen final
-	//		int parseados = resultado.size();
-	//		int fallidas = fallidos.size();
-	//		double porcentajeFallidas = totalItems > 0 ? (fallidas * 100.0 / totalItems) : 0;
-	//
-	//		StringBuilder resumen = new StringBuilder();
-	//		resumen.append("===== RESUMEN Parser EESS =====\n").append("Total EESS en JSON: ")
-	//				.append(totalItems).append("\n").append("Parseadas correctamente: ")
-	//				.append(parseados).append("\n").append("Fallidas: ").append(fallidas)
-	//				.append(" (").append(String.format("%.2f", porcentajeFallidas))
-	//				.append("%)\n").append("Número de hilos usados: ").append(numHilos)
-	//				.append("\n");
-	//
-	//		if (!fallidos.isEmpty()) {
-	//			resumen.append("JSON de EESS que fallaron al parsear:\n");
-	//			for (JSONObject fallo : fallidos) {
-	//				resumen.append(fallo.toString()).append("\n");
-	//			}
-	//		}
-	//
-	//		resumen.append("===============================\n");
-	//		loggerParse.info(resumen.toString());
-	//
-	//		return resultado;
-	//	}
-
 }

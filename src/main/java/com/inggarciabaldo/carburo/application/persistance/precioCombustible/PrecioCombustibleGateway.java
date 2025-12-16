@@ -1,7 +1,6 @@
 package com.inggarciabaldo.carburo.application.persistance.precioCombustible;
 
 import com.inggarciabaldo.carburo.application.persistance.PersistenceException;
-import com.inggarciabaldo.carburo.application.persistance.eess.EESSGateway.EESSRecord;
 
 import java.util.Collection;
 import java.util.List;
@@ -89,7 +88,7 @@ public interface PrecioCombustibleGateway {
 	 */
 	class PrecioCombustibleRecord {
 		public short idCombustible;
-		public int idEess;
+		public int idEESS;
 		public java.sql.Date fecha;
 		public Double precio;
 	}

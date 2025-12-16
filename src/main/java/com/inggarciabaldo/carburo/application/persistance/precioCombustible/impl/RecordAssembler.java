@@ -17,7 +17,7 @@ public class RecordAssembler {
 		PrecioCombustibleRecord result = new PrecioCombustibleRecord();
 
 		result.idCombustible = rs.getShort(PRECIOCOMBUSTIBLE_ID_COMBUSTIBLE);
-		result.idEess        = rs.getInt(PRECIOCOMBUSTIBLE_ID_EESS);
+		result.idEESS        = rs.getInt(PRECIOCOMBUSTIBLE_ID_EESS);
 		result.fecha         = rs.getDate(PRECIOCOMBUSTIBLE_FECHA);
 		result.precio        = rs.getDouble(PRECIOCOMBUSTIBLE_PRECIO);
 

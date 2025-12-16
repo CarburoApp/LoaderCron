@@ -47,9 +47,14 @@ public class FindAllCombustiblesDisponiblesByEESSCollectionIds
 		if (combDispRecord.isEmpty()) return Collections.emptySet();
 
 		// Filtramos por EESS incluidas en eessIds y convertimos Record -> DTO
-		return combDispRecord.stream().filter(record -> eessIds.contains(record.idEESS))
+		Collection<CombustibleDisponibleDTO> salida;
+		salida = combDispRecord.stream().filter(record -> eessIds.contains(record.idEESS))
 				.map(record -> new CombustibleDisponibleDTO(record.idCombustible,
 															record.idEESS))
 				.collect(Collectors.toSet());
+		Loggers.DB.info(
+				"ENCONTRADAS {} objetos Combustible-Disponible para el grupo de EESS ({})",
+				salida.size(), eessIds.size());
+		return salida;
 	}
 }

@@ -7,8 +7,7 @@ import com.inggarciabaldo.carburo.application.rest.dto.ESParserDTO;
 import com.inggarciabaldo.carburo.application.service.ServiceFactory;
 import com.inggarciabaldo.carburo.scheduler.jobs.DatoDeEjecucion;
 import com.inggarciabaldo.carburo.util.log.Loggers;
-import com.inggarciabaldo.carburo.util.properties.PropertyLoader;
-import org.json.JSONObject;
+import lombok.Getter;
 import org.slf4j.Logger;
 
 import java.time.LocalDate;
@@ -36,7 +35,6 @@ public class EETTReqResParser {
 	/**
 	 * Constantes
 	 */
-	public static final String DATE_API_RES_FORMAT = "dd/MM/yyyy HH:mm:ss";
 	public static final String ETIQUETA_LOGGER = "EETTReqResParser. ";
 
 	/**
@@ -45,13 +43,9 @@ public class EETTReqResParser {
 	private static final Logger loggerParse = Loggers.PARSE;
 
 	/**
-	 * Utilidades de uso en el Job
-	 */
-	private final PropertyLoader propertyLoader = PropertyLoader.getInstance();
-
-	/**
 	 * Datos de ejecución
 	 */
+	@Getter
 	private final LocalDate fechaDeParser;
 	private final EETTReqResParserDTO dto;
 	private final DatoDeEjecucion datoDeEjecucion;

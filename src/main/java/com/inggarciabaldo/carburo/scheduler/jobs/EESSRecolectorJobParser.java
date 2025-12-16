@@ -150,7 +150,7 @@ public class EESSRecolectorJobParser implements Job {
 		}
 
 		// Persistencia
-		{
+		try {
 			ProcesadoDePersistenciaEESSaBD procesador;
 			loggerCron.info("Comienza la fase de persistencia.");
 			procesador = new ProcesadoDePersistenciaEESSaBD(listadoDeEESSObtenidas,
@@ -160,6 +160,11 @@ public class EESSRecolectorJobParser implements Job {
 			procesador.procesar();
 			this.datoDeEjecucion.tiempoPersistenciaMs =
 					System.currentTimeMillis() - tiempoInicioPersistencia;
+		} catch (Exception e) {
+			loggerCron.info(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
+									"Error inesperado en la fase de persistencia: {}",
+							e.getMessage(), e);
+			return;
 		}
 
 		/*
@@ -270,6 +275,7 @@ public class EESSRecolectorJobParser implements Job {
 				this.datoDeEjecucion.tiempoParseoEESSMs =
 						System.currentTimeMillis() - tiempoInicioParseo;
 			}
+			datoDeEjecucion.setFechaDeParser(parser.getFechaDeParser());
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			loggerCron.error(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
 									 "Ha ocurrido un error en el parseo de las EESS: {}",
