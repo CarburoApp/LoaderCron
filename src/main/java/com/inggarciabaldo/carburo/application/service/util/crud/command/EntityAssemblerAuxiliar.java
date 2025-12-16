@@ -14,6 +14,9 @@ import java.util.Optional;
  */
 public class EntityAssemblerAuxiliar {
 
+	// Constructor privado para evitar instancias innecesarias.
+	private EntityAssemblerAuxiliar(){}
+
 
 	/**
 	 * Devuelve una {@link Provincia} a partir de su identificador externo.
