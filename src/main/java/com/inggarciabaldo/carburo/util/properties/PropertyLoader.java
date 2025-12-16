@@ -69,12 +69,13 @@ public final class PropertyLoader {
 	 * @throws IllegalStateException si ocurre un error al cargar alguno de los archivos
 	 */
 	public void reloadProperties() {
-		Loggers.GENERAL.info("RECARGADA de TODAS las PROPIEDADES correctamente desde disco.");
 
 		loadProperties(APPLICATION_PROPERTIES, applicationProps);
 		loadProperties(ENDPOINTS_PROPERTIES, endpointsProps);
 		loadProperties(JSON_KEYS_PROPERTIES, jsonKeysProps);
 		loadProperties(QUERIES_PROPERTIES, queriesProps);
+
+		Loggers.GENERAL.info("RECARGADA de TODAS las PROPIEDADES correctamente desde disco.");
 	}
 
 	/**

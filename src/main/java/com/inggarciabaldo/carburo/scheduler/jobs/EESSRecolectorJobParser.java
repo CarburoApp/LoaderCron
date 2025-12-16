@@ -1,5 +1,8 @@
 package com.inggarciabaldo.carburo.scheduler.jobs;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.FileAppender;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
@@ -16,7 +19,6 @@ import com.inggarciabaldo.carburo.util.properties.PropertyLoader;
 import org.json.JSONObject;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
-import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -83,7 +85,21 @@ public class EESSRecolectorJobParser implements Job {
 	 */
 	@Override
 	public void execute(JobExecutionContext context) {
+		// Fecha de inicio de ejecución
 		datoDeEjecucion.fechaInicioEjecucion = LocalDateTime.now();
+
+		//Configuración del logger especifico.
+		FileAppender<ILoggingEvent> cronAppender = Loggers.createCronExecutionAppender(
+				datoDeEjecucion.fechaInicioEjecucion);
+		Logger logger = Loggers.CRON;
+		logger.addAppender(cronAppender);
+		logger = Loggers.GENERAL;
+		logger.addAppender(cronAppender);
+		logger = Loggers.DB;
+		logger.addAppender(cronAppender);
+		logger = Loggers.PARSE;
+		logger.addAppender(cronAppender);
+
 		loggerCron.info("<<< Activación del CRON >>> Hora de inicio: {}",
 						datoDeEjecucion.formatoHora(
 								datoDeEjecucion.fechaInicioEjecucion));
@@ -178,6 +194,17 @@ public class EESSRecolectorJobParser implements Job {
 		// Dado que es el fin del ciclo de vida limpiamos cualquier recurso abierto
 		ApplicationCache.instance.clearCache();
 		finEjecucionCronYRegistroInformeEjecucion();
+
+		// Desacoplamos la redirección de los logs.
+		cronAppender.stop();
+		logger = Loggers.CRON;
+		logger.detachAppender(cronAppender);
+		logger = Loggers.GENERAL;
+		logger.detachAppender(cronAppender);
+		logger = Loggers.DB;
+		logger.detachAppender(cronAppender);
+		logger = Loggers.PARSE;
+		logger.detachAppender(cronAppender);
 	}
 
 	/**

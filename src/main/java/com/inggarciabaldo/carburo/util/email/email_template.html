@@ -1,0 +1,36 @@
+<html lang="es-ES">
+<meta charset="UTF-8">
+<body style="font-family:Arial,sans-serif;">
+<h2>Reporte del Job</h2>
+<p><b>Inicio:</b> {{START_TIME}}</p>
+<p><b>Estado BD:</b> {{DB_STATUS}}</p>
+<p><b>Estado API:</b> {{API_STATUS}}</p>
+<hr>
+<h3>Métricas de ejecución</h3>
+<ul>
+    <li>Tiempo conexión BD: {{DB_TIME}} ms</li>
+    <li>Tiempo conexión API: {{API_TIME}} ms</li>
+    <li>Tiempo parseo: {{PARSE_TIME}} ms</li>
+    <li>Tiempo comparar y guardar: {{COMPARE_SAVE_TIME}} ms</li>
+    <li>Tiempo total: {{TOTAL_TIME}} ms</li>
+</ul>
+<h3>Datos procesados</h3>
+<ul>
+    <li>Total elementos API: {{TOTAL_ELEMENTS}}</li>
+    <li>Elementos parseados: {{PARSED_ELEMENTS}}</li>
+    <li>Elementos con errores: {{ERROR_ELEMENTS}}</li>
+    <li>Elementos nuevos registrados: {{NEW_ELEMENTS}}</li>
+    <li>Elementos actualizados manualmente: {{MANUAL_UPDATE_ELEMENTS}}</li>
+    <li>Elementos guardados en BD: {{SAVED_ELEMENTS}}</li>
+    <li>Precios guardados: {{SAVED_PRICES}}</li>
+</ul>
+<h3>Warnings</h3>
+<ul>
+    {{WARNINGS}}
+</ul>
+<h3>Errores</h3>
+<ul>
+    {{ERRORS}}
+</ul>
+</body>
+</html>
