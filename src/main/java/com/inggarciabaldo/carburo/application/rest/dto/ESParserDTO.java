@@ -8,16 +8,17 @@ import lombok.*;
 
 import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.*;
 
+/**
+ * DTO para la petición Estacion de Servicio (EESS).
+ * Pensado para ser usado en peticiones de EESS.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
 @ToString
-/**
- * DTO para la petición Estacion de Servicio (EESS).
- * Pensado para ser usado en peticiones de EESS.
- */ public class ESParserDTO {
+public class ESParserDTO {
 
 	@SerializedName(API_KEY_RESP_EESS_ID)
 	private int ideess;

@@ -1,7 +1,6 @@
 package com.inggarciabaldo.carburo.application.persistance.combustibleDisponible;
 
 import com.inggarciabaldo.carburo.application.persistance.PersistenceException;
-import com.inggarciabaldo.carburo.application.persistance.eess.EESSGateway.EESSRecord;
 
 import java.util.Collection;
 import java.util.List;

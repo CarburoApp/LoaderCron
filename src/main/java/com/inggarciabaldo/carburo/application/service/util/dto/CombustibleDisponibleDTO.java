@@ -1,5 +1,8 @@
 package com.inggarciabaldo.carburo.application.service.util.dto;
 
+import lombok.Getter;
+
+@Getter
 public class CombustibleDisponibleDTO {
 
 	// DTO
@@ -10,10 +13,4 @@ public class CombustibleDisponibleDTO {
 		this.idCombustible = idCombustible;
 		this.idEESS        = idEESS;
 	}
-
-	//Getter
-
-	public int getIdEESS() {return idEESS;}
-
-	public short getIdCombustible() {return idCombustible;}
 }

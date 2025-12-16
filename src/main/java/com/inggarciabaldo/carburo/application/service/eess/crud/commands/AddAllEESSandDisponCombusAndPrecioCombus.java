@@ -88,9 +88,7 @@ public class AddAllEESSandDisponCombusAndPrecioCombus implements Command<Integer
 				.collect(Collectors.toMap(r -> r.extCode, r -> r.id));
 
 		// Asignamos el ID a cada EESS de Dominio
-		estacionesDeServicio.forEach(eess -> {
-			eess.setId(idPorExtCode.get(eess.getExtCode()));
-		});
+		estacionesDeServicio.forEach(eess -> eess.setId(idPorExtCode.get(eess.getExtCode())));
 
 		// Se han de insertar antes las EESS para poder obtener sus IDs
 		transformarEntidadesARecords(combDispRecords, precioRecords);

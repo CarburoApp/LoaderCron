@@ -72,79 +72,67 @@ public class DatoDeEjecucion {
 	public void incrementarTotalErroresParseEESS() {totalEESSNoParseadasConErrores++;}
 
 	protected String getInformeEjecucion() {
-		StringBuilder sb = new StringBuilder("\n").append(
-						"============================================================\n")
-				.append("                     RESUMEN EJECUCIÓN CRON\n")
-				.append("============================================================\n")
-				.append("FECHAS\n")
-				.append("------------------------------------------------------------\n")
-				.append("Inicio ejecución : ").append(formatoHora(fechaInicioEjecucion))
-				.append("\n").append("Fin ejecución    : ")
-				.append(formatoHora(fechaFinEjecucion)).append("\n")
-				.append("Duración total   : ").append(formatoTiempo(tiempoTotalCron))
-				.append("\n\n")
 
-				.append("DATOS RECUPERADOS\n")
-				.append("------------------------------------------------------------\n")
-				.append("EESS en JSON                 : ").append(totalEESSEnJson)
-				.append("\n").append("EESS en DTO                  : ")
-				.append(totalEESSEnDTO).append("\n")
-				.append("Precios en DTO               : ").append(totalPreciosEnDTO)
-				.append("\n\n")
-
-				.append("PROCESAMIENTO EESS\n")
-				.append("------------------------------------------------------------\n")
-				.append("EESS parseadas correctamente           : ")
-				.append(totalEESSParseadas).append(" (")
-				.append(String.format("%.2f", getPorcentajeParseoEESS())).append("%)\n")
-				.append("EESS con errores de parseo             : ")
-				.append(totalEESSNoParseadasConErrores).append("\n")
-				.append("EESS parseadas fuera de BD             : ")
-				.append(totalEESSParseadasFueraDeBD).append("\n")
-				.append("EESS parseadas en BD                   : ")
-				.append(totalEESSParseadasEnBD).append("\n")
-				.append("EESS que requieren actualización      : ")
-				.append(totalEESSParseadasRequierenActualizacion).append("\n\n")
-
-				.append("PERSISTENCIA EESS\n")
-				.append("------------------------------------------------------------\n")
-				.append("EESS insertadas                        : ")
-				.append(totalEESSInsertadas).append("\n")
-				.append("EESS actualizadas                      : ")
-				.append(totalEESSActualizadas).append("\n")
-				.append("TOTAL EESS persistidas                 : ")
-				.append(totalEESSInsertadas + totalEESSActualizadas).append("\n")
-				.append("EESS Precio/Disponibilidad fuera BD    : ")
-				.append(totalEESSPrecioYDisponibilidadFueraDeBDInsertadas).append("\n\n")
-
-				.append("PROCESAMIENTO PRECIOS\n")
-				.append("------------------------------------------------------------\n")
-				.append("Precios a insertar                     : ")
-				.append(totalProcesamientoPreciosAInsertar).append("\n")
-				.append("Precios insertados                      : ")
-				.append(totalPreciosInsertados).append("\n")
-				.append("Precios a actualizar                     : ")
-				.append(totalProcesamientoPreciosAActualizar).append("\n")
-				.append("Precios actualizados                     : ")
-				.append(totalPreciosActualizados).append("\n")
-				.append("TOTAL precios persistidos                : ")
-				.append(totalPreciosInsertados + totalPreciosActualizados).append("\n\n")
-
-				.append("TIEMPOS DE EJECUCIÓN\n")
-				.append("------------------------------------------------------------\n")
-				.append("Petición API                            : ")
-				.append(formatoTiempo(tiempoPeticionApiMs)).append("\n")
-				.append("Parseo JSON → DTO                       : ")
-				.append(formatoTiempo(tiempoJSONParseoDTOMs)).append("\n")
-				.append("Parseo DTO → Entidad                     : ")
-				.append(formatoTiempo(tiempoDTOParseoEntidades)).append("\n")
-				.append("Parseo EESS                             : ")
-				.append(formatoTiempo(tiempoParseoEESSMs)).append("\n")
-				.append("Persistencia EESS y Precios (total)     : ")
-				.append(formatoTiempo(tiempoPersistenciaMs)).append("\n")
-				.append("============================================================\n");
-
-		return sb.toString();
+		return "\n" + "============================================================\n" +
+				"                     RESUMEN EJECUCIÓN CRON\n" +
+				"============================================================\n" +
+				"FECHAS\n" +
+				"------------------------------------------------------------\n" +
+				"Inicio ejecución : " + formatoHora(fechaInicioEjecucion) + "\n" +
+				"Fin ejecución    : " + formatoHora(fechaFinEjecucion) + "\n" +
+				"Duración total   : " + formatoTiempo(tiempoTotalCron) + "\n\n" +
+				"DATOS RECUPERADOS\n" +
+				"------------------------------------------------------------\n" +
+				"EESS en JSON                 : " + totalEESSEnJson + "\n" +
+				"EESS en DTO                  : " + totalEESSEnDTO + "\n" +
+				"Precios en DTO               : " + totalPreciosEnDTO + "\n\n" +
+				"PROCESAMIENTO EESS\n" +
+				"------------------------------------------------------------\n" +
+				"EESS parseadas correctamente           : " + totalEESSParseadas +
+				" (" + String.format("%.2f", getPorcentajeParseoEESS()) + "%)\n" +
+				"EESS con errores de parseo             : " +
+				totalEESSNoParseadasConErrores + "\n" +
+				"EESS parseadas fuera de BD             : " +
+				totalEESSParseadasFueraDeBD + "\n" +
+				"EESS parseadas en BD                   : " +
+				totalEESSParseadasEnBD + "\n" +
+				"EESS que requieren actualización      : " +
+				totalEESSParseadasRequierenActualizacion + "\n\n" +
+				"PERSISTENCIA EESS\n" +
+				"------------------------------------------------------------\n" +
+				"EESS insertadas                        : " +
+				totalEESSInsertadas + "\n" +
+				"EESS actualizadas                      : " +
+				totalEESSActualizadas + "\n" +
+				"TOTAL EESS persistidas                 : " +
+				(totalEESSInsertadas + totalEESSActualizadas) + "\n" +
+				"EESS Precio/Disponibilidad fuera BD    : " +
+				totalEESSPrecioYDisponibilidadFueraDeBDInsertadas + "\n\n" +
+				"PROCESAMIENTO PRECIOS\n" +
+				"------------------------------------------------------------\n" +
+				"Precios a insertar                     : " +
+				totalProcesamientoPreciosAInsertar + "\n" +
+				"Precios insertados                      : " +
+				totalPreciosInsertados + "\n" +
+				"Precios a actualizar                     : " +
+				totalProcesamientoPreciosAActualizar + "\n" +
+				"Precios actualizados                     : " +
+				totalPreciosActualizados + "\n" +
+				"TOTAL precios persistidos                : " +
+				(totalPreciosInsertados + totalPreciosActualizados) + "\n\n" +
+				"TIEMPOS DE EJECUCIÓN\n" +
+				"------------------------------------------------------------\n" +
+				"Petición API                            : " +
+				formatoTiempo(tiempoPeticionApiMs) + "\n" +
+				"Parseo JSON → DTO                       : " +
+				formatoTiempo(tiempoJSONParseoDTOMs) + "\n" +
+				"Parseo DTO → Entidad                     : " +
+				formatoTiempo(tiempoDTOParseoEntidades) + "\n" +
+				"Parseo EESS                             : " +
+				formatoTiempo(tiempoParseoEESSMs) + "\n" +
+				"Persistencia EESS y Precios (total)     : " +
+				formatoTiempo(tiempoPersistenciaMs) + "\n" +
+				"============================================================\n";
 	}
 
 

@@ -2,17 +2,19 @@ package com.inggarciabaldo.carburo.application.rest.dto;
 
 import com.google.gson.annotations.SerializedName;
 import lombok.*;
+
 import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.*;
+
+/**
+ * DTO para los Municipios.
+ * Pensado para ser usado en peticiones de listados de Municipios desde la API de carburantes.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
 @ToString
-/**
- * DTO para los Municipios.
- * Pensado para ser usado en peticiones de listados de Municipios desde la API de carburantes.
- */
 public class MunicipioParserDTO {
 
     @SerializedName(API_KEY_RESP_MUNICIPIO_ID)

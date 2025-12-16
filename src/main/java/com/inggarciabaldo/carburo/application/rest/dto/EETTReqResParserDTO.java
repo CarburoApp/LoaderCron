@@ -7,16 +7,17 @@ import java.util.List;
 
 import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.*;
 
+
+/**
+ * DTO para la petición base de Estaciones Terrestres (EETT).
+ * Pensado para ser usado en todas peticiones relacionadas con Estaciones Terrestres.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
 @ToString
-/**
- * DTO para la petición base de Estaciones Terrestres (EETT).
- * Pensado para ser usado en todas peticiones relacionadas con Estaciones Terrestres.
- */
 public class EETTReqResParserDTO {
 
     @SerializedName(API_KEY_RESP_FECHA)

@@ -129,8 +129,8 @@ public class EESSParser {
 		for (PrecioCombustible objPrecio : prComb)
 			eess.addCombustibleDisponible(objPrecio.getCombustible());
 
-		//parseLog.info("La EESS id {} ha generado {} nuevos precios asociados.",
-		//			  eess.getId(), eess.getPreciosCombustibles().size());
+		parseLog.info("La EESS id {} ha generado {} nuevos precios asociados.",
+					  eess.getId(), eess.getPreciosCombustibles().size());
 	}
 
 
