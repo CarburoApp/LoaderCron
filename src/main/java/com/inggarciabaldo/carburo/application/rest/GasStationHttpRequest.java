@@ -6,8 +6,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -48,7 +46,7 @@ public class GasStationHttpRequest {
 			this.httpClient = new HttpClient();
 		}
 		//Comprobamos las excepciones del cliente HTTP
-		catch (NoSuchAlgorithmException | KeyManagementException e) {
+		catch (Exception e) {
 			throw new IllegalStateException("No se ha podido cargar el cliente HTTP", e);
 		}
 	}
