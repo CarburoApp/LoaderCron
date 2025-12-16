@@ -108,6 +108,9 @@ public class GasStationHttpRequest {
 		return httpClient.obtenerJsonObjet(url);
 	}
 
+	/**
+	 * Realiza una petición GET al endpoint indicado y devuelve el resultado en formato JSON.
+	 */
 	private JSONArray getJsonArray(String key, Map<String, Object> params)
 			throws IOException {
 		String url = buildUrl(key, params);
@@ -335,8 +338,8 @@ public class GasStationHttpRequest {
 	/**
 	 * Obtiene el listado completo de Municipios.
 	 */
-	public JSONArray getMunicipioList() throws IOException {
-		return getJsonArray("listados.municipios", null);
+	public JSONObject getMunicipioList() throws IOException {
+		return getJson("listados.municipios", null);
 	}
 
 	/**

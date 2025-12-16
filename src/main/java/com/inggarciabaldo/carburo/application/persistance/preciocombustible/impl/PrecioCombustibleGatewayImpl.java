@@ -1,7 +1,7 @@
-package com.inggarciabaldo.carburo.application.persistance.precioCombustible.impl;
+package com.inggarciabaldo.carburo.application.persistance.preciocombustible.impl;
 
 import com.inggarciabaldo.carburo.application.persistance.PersistenceException;
-import com.inggarciabaldo.carburo.application.persistance.precioCombustible.PrecioCombustibleGateway;
+import com.inggarciabaldo.carburo.application.persistance.preciocombustible.PrecioCombustibleGateway;
 import com.inggarciabaldo.carburo.config.persistencia.jdbc.Jdbc;
 import com.inggarciabaldo.carburo.util.properties.PropertyLoader;
 
@@ -74,19 +74,27 @@ public class PrecioCombustibleGatewayImpl implements PrecioCombustibleGateway {
 		try {
 			Connection c = Jdbc.getCurrentConnection();
 			String sql = getQuery(ADD_KEY);
-			for (PrecioCombustibleRecord record : coleccionPreciosCombustibles)
-				try (PreparedStatement pst = c.prepareStatement(sql)) {
+			try (PreparedStatement pst = c.prepareStatement(sql)) {
+				for (PrecioCombustibleRecord record : coleccionPreciosCombustibles) {
 					pst.setShort(1, record.idCombustible);
 					pst.setInt(2, record.idEESS);
 					pst.setDate(3, record.fecha);
 					pst.setDouble(4, record.precio);
-					pst.executeUpdate();
-					elementosInsertados++;
+					pst.addBatch();
 				}
+
+				int[] resultados = pst.executeBatch();
+
+				int total = 0;
+				for (int r : resultados) {
+					if (r >= 0) total += r;
+					else if (r == Statement.SUCCESS_NO_INFO) total++;
+				}
+				return total;
+			}
 		} catch (SQLException e) {
 			throw new PersistenceException(e);
 		}
-		return elementosInsertados;
 	}
 
 	@Override

@@ -23,6 +23,9 @@ import java.sql.SQLException;
  */
 public class Jdbc {
 
+	// Constructor privado para evitar instancias innecesarias.
+	private Jdbc(){}
+
 	/**
 	 * Instancia singleton del cargador de propiedades de la aplicación
 	 */

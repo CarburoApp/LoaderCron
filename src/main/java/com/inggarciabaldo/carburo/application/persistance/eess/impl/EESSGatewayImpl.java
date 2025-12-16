@@ -8,6 +8,7 @@ import com.inggarciabaldo.carburo.config.persistencia.jdbc.Jdbc;
 
 import java.sql.*;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -55,18 +56,33 @@ public class EESSGatewayImpl extends AbstractGatewayImpl<EESSRecord>
 			Connection c = Jdbc.getCurrentConnection();
 			String sql = getQuery(ADD_KEY);
 
-			try (PreparedStatement pst = c.prepareStatement(sql,
-															Statement.RETURN_GENERATED_KEYS)) {
+			try (PreparedStatement pst = c.prepareStatement(
+					sql, Statement.RETURN_GENERATED_KEYS)) {
+
+				// 1. Añadimos todos los inserts al batch
 				for (EESSRecord record : records) {
 					doInsertPreparedStatement(record, pst);
-					pst.executeUpdate();
+					pst.addBatch();
+				}
 
-					// Recuperamos el ID generado
-					try (ResultSet rs = pst.getGeneratedKeys()) {
-						if (rs.next()) record.id = rs.getInt(1);
-						else throw new PersistenceException(
-								"No se generó ID para la EESS insertada");
+				// 2. Ejecutamos el batch
+				pst.executeBatch();
 
+				// 3. Asignamos los IDs generados
+				try (ResultSet rs = pst.getGeneratedKeys()) {
+					Iterator<EESSRecord> it = records.iterator();
+
+					while (rs.next()) {
+						if (!it.hasNext()) {
+							throw new PersistenceException(
+									"Más IDs generados que registros insertados");
+						}
+						it.next().id = rs.getInt(1);
+					}
+
+					if (it.hasNext()) {
+						throw new PersistenceException(
+								"Menos IDs generados que registros insertados");
 					}
 				}
 			}

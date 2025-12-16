@@ -19,6 +19,9 @@ import com.inggarciabaldo.carburo.application.service.ServiceFactory;
  */
 public class Factorias {
 
+	// Constructor privado para evitar instancias innecesarias
+	private Factorias(){}
+
 	/**
 	 * Factoría encargada de la capa de persistencia.
 	 * <p>

@@ -5,7 +5,7 @@ import com.inggarciabaldo.carburo.application.model.Provincia;
 import com.inggarciabaldo.carburo.application.persistance.provincia.ProvinciaGateway;
 import com.inggarciabaldo.carburo.application.persistance.provincia.ProvinciaGateway.ProvinciaRecord;
 import com.inggarciabaldo.carburo.application.service.provincia.crud.EntityAssembler;
-import com.inggarciabaldo.carburo.application.service.util.command.Command;
+import com.inggarciabaldo.carburo.application.service.util.crud.command.Command;
 import com.inggarciabaldo.carburo.config.cache.ApplicationCache;
 import com.inggarciabaldo.carburo.util.log.Loggers;
 

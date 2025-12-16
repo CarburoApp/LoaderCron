@@ -1,4 +1,4 @@
-package com.inggarciabaldo.carburo.application.persistance.combustibleDisponible;
+package com.inggarciabaldo.carburo.application.persistance.combustibledisponible;
 
 import com.inggarciabaldo.carburo.application.persistance.PersistenceException;
 

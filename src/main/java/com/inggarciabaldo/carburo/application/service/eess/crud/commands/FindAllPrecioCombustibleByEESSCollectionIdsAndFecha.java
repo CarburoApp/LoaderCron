@@ -4,10 +4,10 @@ import com.inggarciabaldo.carburo.application.Factorias;
 import com.inggarciabaldo.carburo.application.model.Combustible;
 import com.inggarciabaldo.carburo.application.model.EstacionDeServicio;
 import com.inggarciabaldo.carburo.application.model.PrecioCombustible;
-import com.inggarciabaldo.carburo.application.persistance.precioCombustible.PrecioCombustibleGateway;
-import com.inggarciabaldo.carburo.application.persistance.precioCombustible.PrecioCombustibleGateway.PrecioCombustibleRecord;
+import com.inggarciabaldo.carburo.application.persistance.preciocombustible.PrecioCombustibleGateway;
+import com.inggarciabaldo.carburo.application.persistance.preciocombustible.PrecioCombustibleGateway.PrecioCombustibleRecord;
 import com.inggarciabaldo.carburo.application.service.combustible.crud.EntityAssembler;
-import com.inggarciabaldo.carburo.application.service.util.command.Command;
+import com.inggarciabaldo.carburo.application.service.util.crud.command.Command;
 import com.inggarciabaldo.carburo.util.log.Loggers;
 
 import java.sql.Date;

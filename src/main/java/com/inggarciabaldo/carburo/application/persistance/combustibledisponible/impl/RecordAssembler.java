@@ -1,7 +1,7 @@
-package com.inggarciabaldo.carburo.application.persistance.combustibleDisponible.impl;
+package com.inggarciabaldo.carburo.application.persistance.combustibledisponible.impl;
 
 
-import com.inggarciabaldo.carburo.application.persistance.combustibleDisponible.CombustibleDisponibleGateway.CombustibleDisponibleRecord;
+import com.inggarciabaldo.carburo.application.persistance.combustibledisponible.CombustibleDisponibleGateway.CombustibleDisponibleRecord;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

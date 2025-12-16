@@ -4,14 +4,14 @@ import com.inggarciabaldo.carburo.application.persistance.ccaa.CCAAGateway;
 import com.inggarciabaldo.carburo.application.persistance.ccaa.impl.CCAAGatewayImpl;
 import com.inggarciabaldo.carburo.application.persistance.combustible.CombustibleGateway;
 import com.inggarciabaldo.carburo.application.persistance.combustible.impl.CombustibleGatewayImpl;
-import com.inggarciabaldo.carburo.application.persistance.combustibleDisponible.CombustibleDisponibleGateway;
-import com.inggarciabaldo.carburo.application.persistance.combustibleDisponible.impl.CombustibleDisponibleGatewayImpl;
+import com.inggarciabaldo.carburo.application.persistance.combustibledisponible.CombustibleDisponibleGateway;
+import com.inggarciabaldo.carburo.application.persistance.combustibledisponible.impl.CombustibleDisponibleGatewayImpl;
 import com.inggarciabaldo.carburo.application.persistance.eess.EESSGateway;
 import com.inggarciabaldo.carburo.application.persistance.eess.impl.EESSGatewayImpl;
 import com.inggarciabaldo.carburo.application.persistance.municipio.MunicipioGateway;
 import com.inggarciabaldo.carburo.application.persistance.municipio.impl.MunicipioGatewayImpl;
-import com.inggarciabaldo.carburo.application.persistance.precioCombustible.PrecioCombustibleGateway;
-import com.inggarciabaldo.carburo.application.persistance.precioCombustible.impl.PrecioCombustibleGatewayImpl;
+import com.inggarciabaldo.carburo.application.persistance.preciocombustible.PrecioCombustibleGateway;
+import com.inggarciabaldo.carburo.application.persistance.preciocombustible.impl.PrecioCombustibleGatewayImpl;
 import com.inggarciabaldo.carburo.application.persistance.provincia.ProvinciaGateway;
 import com.inggarciabaldo.carburo.application.persistance.provincia.impl.ProvinciaGatewayImpl;
 

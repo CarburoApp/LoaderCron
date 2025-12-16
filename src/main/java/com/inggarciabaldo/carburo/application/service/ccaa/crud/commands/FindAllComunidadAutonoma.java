@@ -5,7 +5,7 @@ import com.inggarciabaldo.carburo.application.model.ComunidadAutonoma;
 import com.inggarciabaldo.carburo.application.persistance.ccaa.CCAAGateway;
 import com.inggarciabaldo.carburo.application.persistance.ccaa.CCAAGateway.CCAARecord;
 import com.inggarciabaldo.carburo.application.service.ccaa.crud.EntityAssembler;
-import com.inggarciabaldo.carburo.application.service.util.command.Command;
+import com.inggarciabaldo.carburo.application.service.util.crud.command.Command;
 import com.inggarciabaldo.carburo.config.cache.ApplicationCache;
 import com.inggarciabaldo.carburo.util.log.Loggers;
 

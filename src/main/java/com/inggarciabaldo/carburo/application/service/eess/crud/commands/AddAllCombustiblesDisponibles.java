@@ -1,9 +1,9 @@
 package com.inggarciabaldo.carburo.application.service.eess.crud.commands;
 
 import com.inggarciabaldo.carburo.application.Factorias;
-import com.inggarciabaldo.carburo.application.persistance.combustibleDisponible.CombustibleDisponibleGateway;
-import com.inggarciabaldo.carburo.application.persistance.combustibleDisponible.CombustibleDisponibleGateway.CombustibleDisponibleRecord;
-import com.inggarciabaldo.carburo.application.service.util.command.Command;
+import com.inggarciabaldo.carburo.application.persistance.combustibledisponible.CombustibleDisponibleGateway;
+import com.inggarciabaldo.carburo.application.persistance.combustibledisponible.CombustibleDisponibleGateway.CombustibleDisponibleRecord;
+import com.inggarciabaldo.carburo.application.service.util.crud.command.Command;
 import com.inggarciabaldo.carburo.application.service.util.dto.CombustibleDisponibleDTO;
 import com.inggarciabaldo.carburo.util.log.Loggers;
 

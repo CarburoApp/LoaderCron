@@ -4,7 +4,7 @@ import com.inggarciabaldo.carburo.application.model.Municipio;
 import com.inggarciabaldo.carburo.application.service.municipio.MunicipioCrudService;
 import com.inggarciabaldo.carburo.application.service.municipio.crud.commands.FindAllMunicipios;
 import com.inggarciabaldo.carburo.application.service.municipio.crud.commands.FindMunicipioById;
-import com.inggarciabaldo.carburo.application.service.util.command.executor.JdbcCommandExecutor;
+import com.inggarciabaldo.carburo.application.service.util.crud.command.executor.JdbcCommandExecutor;
 
 import java.util.List;
 import java.util.Optional;

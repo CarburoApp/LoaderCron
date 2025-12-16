@@ -1,7 +1,7 @@
-package com.inggarciabaldo.carburo.application.service.util.command.executor;
+package com.inggarciabaldo.carburo.application.service.util.crud.command.executor;
 
 import com.inggarciabaldo.carburo.application.persistance.PersistenceException;
-import com.inggarciabaldo.carburo.application.service.util.command.Command;
+import com.inggarciabaldo.carburo.application.service.util.crud.command.Command;
 import com.inggarciabaldo.carburo.config.persistencia.jdbc.Jdbc;
 
 import java.sql.Connection;

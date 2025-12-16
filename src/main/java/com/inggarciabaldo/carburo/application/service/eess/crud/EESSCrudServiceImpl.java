@@ -4,7 +4,7 @@ import com.inggarciabaldo.carburo.application.model.EstacionDeServicio;
 import com.inggarciabaldo.carburo.application.model.PrecioCombustible;
 import com.inggarciabaldo.carburo.application.service.eess.EESSCrudService;
 import com.inggarciabaldo.carburo.application.service.eess.crud.commands.*;
-import com.inggarciabaldo.carburo.application.service.util.command.executor.JdbcCommandExecutor;
+import com.inggarciabaldo.carburo.application.service.util.crud.command.executor.JdbcCommandExecutor;
 import com.inggarciabaldo.carburo.application.service.util.dto.CombustibleDisponibleDTO;
 
 import java.time.LocalDate;

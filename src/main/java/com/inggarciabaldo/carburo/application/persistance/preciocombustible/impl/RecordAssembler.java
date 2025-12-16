@@ -1,7 +1,7 @@
-package com.inggarciabaldo.carburo.application.persistance.precioCombustible.impl;
+package com.inggarciabaldo.carburo.application.persistance.preciocombustible.impl;
 
 
-import com.inggarciabaldo.carburo.application.persistance.precioCombustible.PrecioCombustibleGateway.PrecioCombustibleRecord;
+import com.inggarciabaldo.carburo.application.persistance.preciocombustible.PrecioCombustibleGateway.PrecioCombustibleRecord;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

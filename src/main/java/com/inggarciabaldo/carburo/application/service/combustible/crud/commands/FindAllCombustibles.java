@@ -5,7 +5,7 @@ import com.inggarciabaldo.carburo.application.model.Combustible;
 import com.inggarciabaldo.carburo.application.persistance.combustible.CombustibleGateway;
 import com.inggarciabaldo.carburo.application.persistance.combustible.CombustibleGateway.CombustibleRecord;
 import com.inggarciabaldo.carburo.application.service.combustible.crud.EntityAssembler;
-import com.inggarciabaldo.carburo.application.service.util.command.Command;
+import com.inggarciabaldo.carburo.application.service.util.crud.command.Command;
 import com.inggarciabaldo.carburo.config.cache.ApplicationCache;
 import com.inggarciabaldo.carburo.util.log.Loggers;
 

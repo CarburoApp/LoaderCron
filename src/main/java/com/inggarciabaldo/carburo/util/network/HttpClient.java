@@ -10,8 +10,6 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 
 /**
@@ -65,7 +63,7 @@ public class HttpClient {
 	/**
 	 * Inicializa el cliente OkHttp con los tiempos de espera configurados.
 	 */
-	public HttpClient() throws NoSuchAlgorithmException, KeyManagementException {
+	public HttpClient() {
 		this.clienteHttp = new OkHttpClient.Builder().connectTimeout(
 						Duration.ofSeconds(TIEMPO_ESPERA_SEGUNDOS))
 				.readTimeout(Duration.ofSeconds(TIEMPO_ESPERA_SEGUNDOS))

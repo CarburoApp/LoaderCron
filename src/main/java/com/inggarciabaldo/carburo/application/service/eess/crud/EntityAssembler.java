@@ -10,14 +10,12 @@ import com.inggarciabaldo.carburo.application.model.enums.Margen;
 import com.inggarciabaldo.carburo.application.model.enums.Remision;
 import com.inggarciabaldo.carburo.application.model.enums.Venta;
 import com.inggarciabaldo.carburo.application.persistance.eess.EESSGateway.EESSRecord;
-import com.inggarciabaldo.carburo.application.persistance.precioCombustible.PrecioCombustibleGateway.PrecioCombustibleRecord;
-import com.inggarciabaldo.carburo.config.cache.ApplicationCache;
+import com.inggarciabaldo.carburo.application.persistance.preciocombustible.PrecioCombustibleGateway.PrecioCombustibleRecord;
+import com.inggarciabaldo.carburo.application.service.util.crud.command.EntityAssemblerAuxiliar;
 import com.inggarciabaldo.carburo.util.log.Loggers;
 
 import java.sql.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 public class EntityAssembler {
 
@@ -29,8 +27,8 @@ public class EntityAssembler {
 
 	public static EstacionDeServicio toEntity(EESSRecord record) {
 
-		Municipio municipio = getMunicipio(record.idMunicipio);
-		Provincia provincia = getProvincia(record.idProvincia);
+		Municipio municipio = EntityAssemblerAuxiliar.getMunicipio(record.idMunicipio);
+		Provincia provincia = EntityAssemblerAuxiliar.getProvincia(record.idProvincia);
 
 		// Compruebo si coincide la provincia del municipio con la provincia del EESS
 		if (!provincia.equals(municipio.getProvincia())) {
@@ -92,33 +90,5 @@ public class EntityAssembler {
 		m.precio        = entity.getPrecio();
 		return m;
 	}
-
-	private static Municipio getMunicipio(short id) {
-		// Comrpuebo si está en caché
-		Map<Short, Municipio> cache = ApplicationCache.instance.getMunicipios();
-		if (cache != null && !cache.isEmpty()) for (Municipio item : cache.values())
-			if (item.getExtCode() == id) return item;
-
-		Optional<Municipio> municipio = Factorias.service.forMunicipio()
-				.findMunicipioById(id);
-		if (municipio.isEmpty()) throw new IllegalStateException(
-				"No se ha encontrado el municipio de la EESS. Id(municipio): " + id);
-		return municipio.get();
-	}
-
-	private static Provincia getProvincia(short id) {
-		// Comrpuebo si está en caché
-		Map<Short, Provincia> cache = ApplicationCache.instance.getProvincias();
-		if (cache != null && !cache.isEmpty()) for (Provincia provincia : cache.values())
-			if (provincia.getExtCode() == id) return provincia;
-
-		Optional<Provincia> provincia = Factorias.service.forProvincia()
-				.findProvinciaById(id);
-		if (provincia.isEmpty()) throw new IllegalStateException(
-				"No se ha encontrado la provincia de la EESS. Id(provincia): " + id);
-		return provincia.get();
-	}
-
-
 }
 

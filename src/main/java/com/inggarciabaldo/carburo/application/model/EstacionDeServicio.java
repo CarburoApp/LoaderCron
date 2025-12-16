@@ -78,15 +78,15 @@ public class EstacionDeServicio implements Serializable {
 	}
 
 
-	public boolean addPrecioCombustible(double precio, Combustible combustible,
-										LocalDate fecha) {
+	public void addPrecioCombustible(double precio, Combustible combustible,
+									 LocalDate fecha) {
 		PrecioCombustible precioC = new PrecioCombustible(this, combustible, fecha,
 														  precio);
-		return this.preciosCombustibles.add(precioC);
+		this.preciosCombustibles.add(precioC);
 	}
 
-	public boolean addCombustibleDisponible(Combustible combustible) {
-		return this.combustiblesDisponibles.add(combustible);
+	public void addCombustibleDisponible(Combustible combustible) {
+		this.combustiblesDisponibles.add(combustible);
 	}
 
 	public boolean removeCombustibleDisponible(Combustible combustible) {

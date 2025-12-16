@@ -5,7 +5,7 @@ import com.inggarciabaldo.carburo.application.model.Municipio;
 import com.inggarciabaldo.carburo.application.persistance.municipio.MunicipioGateway;
 import com.inggarciabaldo.carburo.application.persistance.municipio.MunicipioGateway.MunicipioRecord;
 import com.inggarciabaldo.carburo.application.service.municipio.crud.EntityAssembler;
-import com.inggarciabaldo.carburo.application.service.util.command.Command;
+import com.inggarciabaldo.carburo.application.service.util.crud.command.Command;
 import com.inggarciabaldo.carburo.config.cache.ApplicationCache;
 import com.inggarciabaldo.carburo.util.log.Loggers;
 

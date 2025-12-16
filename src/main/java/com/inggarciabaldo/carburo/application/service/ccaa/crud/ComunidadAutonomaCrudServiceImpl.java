@@ -4,7 +4,7 @@ import com.inggarciabaldo.carburo.application.model.ComunidadAutonoma;
 import com.inggarciabaldo.carburo.application.service.ccaa.ComunidadAutonomaCrudService;
 import com.inggarciabaldo.carburo.application.service.ccaa.crud.commands.FindAllComunidadAutonoma;
 import com.inggarciabaldo.carburo.application.service.ccaa.crud.commands.FindComunidadAutonomaByID;
-import com.inggarciabaldo.carburo.application.service.util.command.executor.JdbcCommandExecutor;
+import com.inggarciabaldo.carburo.application.service.util.crud.command.executor.JdbcCommandExecutor;
 
 import java.util.List;
 import java.util.Optional;

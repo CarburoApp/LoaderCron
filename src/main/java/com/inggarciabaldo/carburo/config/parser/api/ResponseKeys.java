@@ -2,6 +2,9 @@ package com.inggarciabaldo.carburo.config.parser.api;
 
 public abstract class ResponseKeys {
 
+	// Constructor provado para evitar instancias innecesarias.
+	private ResponseKeys(){}
+
 	// Claves comunes en las respuesta base de la API
 
 	public static final String API_KEY_RESP_FECHA = "Fecha";

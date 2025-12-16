@@ -1,14 +1,11 @@
-package com.inggarciabaldo.carburo.application.persistance.combustibleDisponible.impl;
+package com.inggarciabaldo.carburo.application.persistance.combustibledisponible.impl;
 
 import com.inggarciabaldo.carburo.application.persistance.PersistenceException;
-import com.inggarciabaldo.carburo.application.persistance.combustibleDisponible.CombustibleDisponibleGateway;
+import com.inggarciabaldo.carburo.application.persistance.combustibledisponible.CombustibleDisponibleGateway;
 import com.inggarciabaldo.carburo.config.persistencia.jdbc.Jdbc;
 import com.inggarciabaldo.carburo.util.properties.PropertyLoader;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -70,22 +67,28 @@ public class CombustibleDisponibleGatewayImpl implements CombustibleDisponibleGa
 	 */
 	@Override
 	public int addAll(Collection<CombustibleDisponibleRecord> records) {
-		int elementosInsertados = 0;
 		try {
 			Connection c = Jdbc.getCurrentConnection();
 			String sql = getQuery(ADD_KEY);
 
-			for (CombustibleDisponibleRecord record : records)
-				try (PreparedStatement pst = c.prepareStatement(sql)) {
+			try (PreparedStatement pst = c.prepareStatement(sql)) {
+				for (CombustibleDisponibleRecord record : records) {
 					pst.setShort(1, record.idCombustible);
 					pst.setInt(2, record.idEESS);
-					pst.executeUpdate();
-					elementosInsertados++;
+					pst.addBatch();
 				}
+
+				int[] resultados = pst.executeBatch();
+				int total = 0;
+				for (int r : resultados) {
+					if (r >= 0) total += r;
+					else if (r == Statement.SUCCESS_NO_INFO) total++;
+				}
+				return total;
+			}
 		} catch (SQLException e) {
 			throw new PersistenceException(e);
 		}
-		return elementosInsertados;
 	}
 
 
@@ -113,7 +116,7 @@ public class CombustibleDisponibleGatewayImpl implements CombustibleDisponibleGa
 
 			try (PreparedStatement pst = c.prepareStatement(sql)) {
 				try (ResultSet rs = pst.executeQuery()) {
-					return com.inggarciabaldo.carburo.application.persistance.combustibleDisponible.impl.RecordAssembler.toCombustibleDisponibleRecordList(
+					return com.inggarciabaldo.carburo.application.persistance.combustibledisponible.impl.RecordAssembler.toCombustibleDisponibleRecordList(
 							rs);
 				}
 			}

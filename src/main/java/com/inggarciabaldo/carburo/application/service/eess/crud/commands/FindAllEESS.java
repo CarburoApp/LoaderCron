@@ -5,7 +5,7 @@ import com.inggarciabaldo.carburo.application.model.EstacionDeServicio;
 import com.inggarciabaldo.carburo.application.persistance.eess.EESSGateway;
 import com.inggarciabaldo.carburo.application.persistance.eess.EESSGateway.EESSRecord;
 import com.inggarciabaldo.carburo.application.service.eess.crud.EntityAssembler;
-import com.inggarciabaldo.carburo.application.service.util.command.Command;
+import com.inggarciabaldo.carburo.application.service.util.crud.command.Command;
 import com.inggarciabaldo.carburo.util.log.Loggers;
 
 import java.util.List;
