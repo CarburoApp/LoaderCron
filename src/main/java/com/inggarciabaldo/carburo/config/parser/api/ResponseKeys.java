@@ -11,7 +11,6 @@ public abstract class ResponseKeys {
 	public static final String API_KEY_RESP_LISTADO_EESS = "ListaEESSPrecio";
 	public static final String API_KEY_RESP_NOTA = "Nota";
 	public static final String API_KEY_RESP_RES_CONSULTA = "ResultadoConsulta";
-	public static final String API_KEY_RESP_RES_CONSULTA_OK = "OK";
 
 	// Claves específicas para cada EESS del listado
 

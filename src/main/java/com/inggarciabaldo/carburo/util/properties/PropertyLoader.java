@@ -1,5 +1,7 @@
 package com.inggarciabaldo.carburo.util.properties;
 
+import com.inggarciabaldo.carburo.util.log.Loggers;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -40,6 +42,33 @@ public final class PropertyLoader {
 		loadProperties("endpoints.properties", endpointsProps);
 		loadProperties("jsonKeys.properties", jsonKeysProps);
 		loadProperties("queries.properties", queriesProps);
+	}
+
+	/**
+	 * Recarga todos los archivos de propiedades de la aplicación en memoria.
+	 * <p>
+	 * Esta utilidad permite actualizar dinámicamente los valores de las properties
+	 * sin necesidad de reiniciar la aplicación. Simplemente vuelve a cargar
+	 * application.properties, endpoints.properties, jsonKeys.properties y queries.properties.
+	 * </p>
+	 *
+	 * <b>Nota:</b> Cualquier property que se haya modificado en disco desde la carga inicial
+	 * será reflejada después de invocar esta función.
+	 *
+	 * @throws IllegalStateException si ocurre un error al cargar alguno de los archivos
+	 */
+	public void reloadProperties() {
+		// Volvemos a cargar cada archivo de propiedades
+		this.applicationProps.clear();
+		loadProperties("application.properties", applicationProps);
+		this.endpointsProps.clear();
+		loadProperties("endpoints.properties", endpointsProps);
+		this.jsonKeysProps.clear();
+		loadProperties("jsonKeys.properties", jsonKeysProps);
+		this.queriesProps.clear();
+		loadProperties("queries.properties", queriesProps);
+
+		Loggers.GENERAL.info("RECARGADAS TODAS las PROPIEDADES correctamente desde disco.");
 	}
 
 	/**

@@ -25,7 +25,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.*;
+import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.API_KEY_RESP_LISTADO_EESS;
+import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.API_KEY_RESP_RES_CONSULTA;
 
 /**
  * Job de Quartz que se ejecuta periódicamente para:
@@ -50,10 +51,6 @@ public class EESSRecolectorJobParser implements Job {
 	// Logger específico para la aplicación y para el cron
 	private static final Logger loggerCron = Loggers.CRON;
 
-	/**
-	 * Utilidades de uso en el Job
-	 */
-	private final GasStationHttpRequest request = new GasStationHttpRequest(); // TODO usarla
 
 	/**
 	 * Datos de ejecución
@@ -92,6 +89,9 @@ public class EESSRecolectorJobParser implements Job {
 								datoDeEjecucion.fechaInicioEjecucion));
 
 		long tiempoInicioCron = System.currentTimeMillis();
+
+		// 0. Recargar las properties del sistema
+		PropertyLoader.getInstance().reloadProperties();
 
 		/*
 		 * 1. Abrir una conexión con la BD para realizar comprobar si se pueden realizar las operaciones necesarias.
@@ -194,40 +194,98 @@ public class EESSRecolectorJobParser implements Job {
 
 
 	/**
-	 * Obtiene el JSON de estaciones desde la API externa. También válida la respuesta.
+	 * Claves para las properties de configuración de la llamada a la API
+	 */
+	private static final String PROP_MAX_REINTENTOS = "cron.httpReq.intentos";
+	private static final String PROP_TIEMPO_SLEEP_MS = "cron.httpReq.tiempoMiliSegundos.entre.intentos";
+
+	/**
+	 * Valores por defecto si no están configuradas las properties
+	 */
+	private static final int DEFAULT_MAX_REINTENTOS = 3;
+	private static final long DEFAULT_SLEEP_MS = 20_000L; // 20 segundos
+
+	/**
+	 * Obtiene el JSON de estaciones desde la API externa, validando la respuesta.
+	 * Implementa reintentos configurables desde properties.
 	 *
-	 * @return JSONObject con la respuesta de la API.
+	 * @return JSONObject con la respuesta de la API
+	 * @throws IllegalStateException Si no se obtiene una respuesta válida tras todos los intentos
 	 */
 	private JSONObject doAPIReqAndIsRespOK() throws IllegalStateException {
-		long inicioPeticion = System.currentTimeMillis();
-		JSONObject respuestaAPI;
-		try {
-			respuestaAPI             = request.getAllStations();
-			this.datoDeEjecucion.tiempoPeticionApiMs =
-					System.currentTimeMillis() - inicioPeticion;
-		} catch (Exception e) {
-			loggerCron.error(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
-									 "Error al obtener JSON de estaciones: {}",
-							 e.getMessage(), e);
-			throw new IllegalStateException(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
-													"Error al obtener JSON de estaciones desde la API.",
-											e);
-		}
+		// Leemos la configuración desde las properties (como String) y convertimos a tipos correctos
+		PropertyLoader loader = PropertyLoader.getInstance();
+		int maxIntentos = Integer.parseInt(
+				loader.getApplicationProperty(PROP_MAX_REINTENTOS,
+											  String.valueOf(DEFAULT_MAX_REINTENTOS)));
 
-		if (respuestaAPI.keySet().contains(API_KEY_RESP_RES_CONSULTA) &&
-				respuestaAPI.getString(API_KEY_RESP_RES_CONSULTA)
-						.equals(API_KEY_RESP_RES_CONSULTA_OK) &&
-				respuestaAPI.keySet().contains(API_KEY_RESP_LISTADO_EESS)) {
-			this.datoDeEjecucion.totalEESSEnJson = respuestaAPI.getJSONArray(
-							API_KEY_RESP_LISTADO_EESS)
-					.length();
-			guardarRespuestaAPIEnArchivo(respuestaAPI);
-			return respuestaAPI;
+		long sleepMs = Long.parseLong(loader.getApplicationProperty(PROP_TIEMPO_SLEEP_MS,
+																	String.valueOf(
+																			DEFAULT_SLEEP_MS)));
+
+		for (int nIntento = 1; nIntento <= maxIntentos; nIntento++) {
+			long inicioPeticion = System.currentTimeMillis();
+			try {
+				loggerCron.info("SOLICITUD en curso de datos a la API. Intento {} de {}.",
+								nIntento, maxIntentos);
+
+				// Realiza la petición HTTP a la API externa
+				GasStationHttpRequest request = new GasStationHttpRequest();
+				JSONObject respuestaAPI = request.getAllStations();
+
+				// Calculamos el tiempo de respuesta
+				this.datoDeEjecucion.tiempoPeticionApiMs =
+						System.currentTimeMillis() - inicioPeticion;
+
+				// Validamos la estructura de la respuesta
+				if (respuestaAPI.keySet().contains(API_KEY_RESP_RES_CONSULTA) &&
+						respuestaAPI.keySet().contains(API_KEY_RESP_RES_CONSULTA) &&
+						respuestaAPI.keySet().contains(API_KEY_RESP_LISTADO_EESS)) {
+
+					// Guardamos información adicional para seguimiento
+					this.datoDeEjecucion.totalEESSEnJson = respuestaAPI.getJSONArray(
+							API_KEY_RESP_LISTADO_EESS).length();
+
+					// Guardamos la respuesta en archivo para auditoría/debug
+					guardarRespuestaAPIEnArchivo(respuestaAPI);
+
+					loggerCron.info("Respuesta API válida obtenida en {} ms.",
+									this.datoDeEjecucion.tiempoPeticionApiMs);
+					return respuestaAPI;
+				}
+
+				// Si llegamos aquí, la respuesta no es válida
+				IllegalStateException e = new IllegalStateException(
+						LOG_ETIQUETA_INICIAL_CRON_ANULADO +
+								"ERROR al VALIDAR la RESPUESTA JSON de la API.");
+				loggerCron.error(e.getMessage());
+				throw e;
+
+			} catch (Exception e) {
+				loggerCron.error(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
+										 "ERROR al REALIZAR la PETICIÓN HTTP a la API en el intento número {}: {}",
+								 nIntento, e.getMessage(), e);
+
+				// Si no hemos alcanzado el máximo de reintentos, dormimos antes de reintentar
+				if (nIntento < maxIntentos) {
+					loggerCron.info(
+							"El SISTEMA DUERME {} ms antes de REINTENTAR la PETICIÓN.",
+							sleepMs);
+					try {
+						Thread.sleep(sleepMs);
+					} catch (InterruptedException ie) {
+						Thread.currentThread().interrupt();
+						throw new IllegalStateException(
+								"El hilo fue interrumpido durante el sleep de reintento.",
+								ie);
+					}
+				}
+			}
 		}
-		loggerCron.error(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
-								 "Error al válidar la respuesta JSON de la API.");
+		// Si ya superamos los reintentos, lanzamos excepción final
 		throw new IllegalStateException(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
-												"Error al válidar la respuesta JSON de la API.");
+												"NO se pudo obtener una RESPUESTA válida de la API tras " +
+												maxIntentos + " intentos.");
 	}
 
 	/**

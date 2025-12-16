@@ -18,7 +18,6 @@ import java.util.Map;
  * <p>
  * Los endpoints se definen en el archivo: resources/endpoints.properties
  */
-// TODO
 public class GasStationHttpRequest {
 
 	// ============================
