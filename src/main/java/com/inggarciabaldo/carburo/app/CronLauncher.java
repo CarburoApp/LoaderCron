@@ -29,11 +29,6 @@ public class CronLauncher {
 		try {
 			QuartzScheduler quartzScheduler = new QuartzScheduler();
 			quartzScheduler.iniciar();
-
-			//Lanzamos inicialmente la aplicación para que cargue todos los datos inicialmente.
-			appLogger.info("Ejecución del Job inmediatamente tras iniciar el scheduler.");
-			quartzScheduler.ejecutarJobManual();
-
 		} catch (SchedulerException e) {
 			cronLogger.error("Error al iniciar el scheduler: {}", e.getMessage(), e);
 		} catch (Exception e) {
