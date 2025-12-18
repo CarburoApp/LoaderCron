@@ -18,7 +18,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.release>23</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
         <main.class>com.inggarciabaldo.carburo.app.CronLauncher</main.class>
 
         <config.dir>${project.basedir}/Config</config.dir>
