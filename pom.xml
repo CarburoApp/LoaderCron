@@ -65,7 +65,7 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.42</version>
-            <scope>provided</scope>
+            <scope>compile</scope>
         </dependency>
 
         <!-- SLF4J simple -->
@@ -121,7 +121,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.14.1</version>
                 <configuration>
-                    <release>${java.version}</release>
+                    <release>${maven.compiler.release}</release>
                 </configuration>
             </plugin>
 
