@@ -7,7 +7,8 @@ import com.inggarciabaldo.carburo.util.properties.PropertyLoader;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -31,7 +32,7 @@ public class FailedJobExecutionConstructStrategy implements EmailConstructStrate
 
 	private static final String SUBJECT_PREFIX = "Carburo - LoaderCron - [ERROR] Error de ejecución en el Cron - ";
 	private static final PropertyLoader CONFIG = PropertyLoader.getInstance();
-	private static final String EMAIL_TEMPLATE_PATH = "src/main/resources/email_template_error.html";
+	private static final String EMAIL_TEMPLATE_FILE = "email_template_error.html";
 
 
 	/* =======================
@@ -104,26 +105,29 @@ public class FailedJobExecutionConstructStrategy implements EmailConstructStrate
 	 * Construcción HTML
 	 * ======================= */
 	private String buildEmailHtml() throws IOException {
-		String template = Files.readString(Path.of(EMAIL_TEMPLATE_PATH));
-		Map<String, String> placeholders;
-		placeholders = Map.of("{{fechaInicio}}",
-							  datos.formatoHora(datos.getFechaInicioEjecucion()),
-							  "{{fechaFin}}",
-							  datos.formatoHora(datos.getFechaFinEjecucion()),
-							  "{{duracion}}",
-							  datos.formatoTiempo(datos.getTiempoTotalCronMs()),
-							  "{{tipoExcepcion}}", exception.getClass().getName(),
-							  "{{mensajeExcepcion}}", exception.getMessage(),
-							  "{{warningsDetectados}}",
-							  buildHtmlList(datos.getWarningsDetectados(), "warning"),
-							  "{{erroresDetectados}}",
-							  buildHtmlList(datos.getErroresDetectados(), "error"));
+		try (InputStream input = getClass().getClassLoader()
+				.getResourceAsStream(EMAIL_TEMPLATE_FILE)) {
+			if (input == null) throw new IllegalStateException(
+					"No se encontró el template del correo: " + EMAIL_TEMPLATE_FILE);
+			String template = new String(input.readAllBytes(), StandardCharsets.UTF_8);
 
-		for (Map.Entry<String, String> entry : placeholders.entrySet()) {
-			template = template.replace(entry.getKey(), entry.getValue());
+			Map<String, String> placeholders;
+			placeholders = Map.of("{{fechaInicio}}",
+								  datos.formatoHora(datos.getFechaInicioEjecucion()),
+								  "{{fechaFin}}",
+								  datos.formatoHora(datos.getFechaFinEjecucion()),
+								  "{{duracion}}",
+								  datos.formatoTiempo(datos.getTiempoTotalCronMs()),
+								  "{{tipoExcepcion}}", exception.getClass().getName(),
+								  "{{mensajeExcepcion}}", exception.getMessage(),
+								  "{{warningsDetectados}}",
+								  buildHtmlList(datos.getWarningsDetectados(), "warning"),
+								  "{{erroresDetectados}}",
+								  buildHtmlList(datos.getErroresDetectados(), "error"));
+			for (Map.Entry<String, String> entry : placeholders.entrySet())
+				template = template.replace(entry.getKey(), entry.getValue());
+			return template;
 		}
-
-		return template;
 	}
 
 	private String buildHtmlList(List<String> items, String cssClass) {

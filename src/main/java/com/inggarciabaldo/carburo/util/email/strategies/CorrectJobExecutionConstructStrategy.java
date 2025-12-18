@@ -7,7 +7,8 @@ import com.inggarciabaldo.carburo.util.properties.PropertyLoader;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ public class CorrectJobExecutionConstructStrategy implements EmailConstructStrat
 	 * Constantes generales
 	 * ======================= */
 
-	private static final String EMAIL_TEMPLATE_PATH = "src/main/resources/email_template_correct_execution.html";
+	private static final String EMAIL_TEMPLATE_FILE = "email_template_correct_execution.html";
 	private static final String SUBJECT_PREFIX = "Carburo - LoaderCron - [Exitoso] Reporte de ejecución - ";
 
 	private static final PropertyLoader CONFIG = PropertyLoader.getInstance();
@@ -112,13 +113,17 @@ public class CorrectJobExecutionConstructStrategy implements EmailConstructStrat
 	}
 
 	private String buildEmailHtml() throws IOException {
-		String template = Files.readString(Path.of(EMAIL_TEMPLATE_PATH));
+		try (InputStream input = getClass().getClassLoader()
+				.getResourceAsStream(EMAIL_TEMPLATE_FILE)) {
+			if (input == null) throw new IllegalStateException(
+					"No se encontró el template del correo: " + EMAIL_TEMPLATE_FILE);
+			String template = new String(input.readAllBytes(), StandardCharsets.UTF_8);
 
-		for (Map.Entry<String, String> entry : buildTemplateValues().entrySet()) {
-			template = template.replace(entry.getKey(), entry.getValue());
+			for (Map.Entry<String, String> entry : buildTemplateValues().entrySet()) {
+				template = template.replace(entry.getKey(), entry.getValue());
+			}
+			return template;
 		}
-
-		return template;
 	}
 
 	private Map<String, String> buildTemplateValues() {
