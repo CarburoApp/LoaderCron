@@ -43,19 +43,20 @@ El proyecto incluye:
 
 - **Sistema de cron**: Planificador automático que ejecuta las actualizaciones cada 30 minutos como un job.
 - **Módulo HTTP**: Gestiona las peticiones y la recepción de datos JSON.
-- **Parsers JSON**: Transforman los datos obtenidos desde la API MITMA en entidades Java.
-- **Gestión concurrente**: Procesamiento en paralelo de grandes volúmenes de datos para reducir el tiempo de
-  actualización.
+- **Parsers JSON -> DTO -> Entidades**: Transforman los datos obtenidos desde la API MITMA en entidades Java.
 - **Persistencia**: Sincronización eficiente con la base de datos Supabase usando operaciones por lotes.
+- **Servicio de Loggers**: Toda la ejecución queda registrada en los logs correspondientes.
+- **Servicio de correo**: Dispone de un servicio de correo para enviar los resultados de la ejeución e informar de
+  cualquier posible error durante su ejecución.
 
 ---
 
 ## 🔧 Configuración inicial
 
-Antes de ejecutar el cron, **es imprescindible configurar correctamente las variables de entorno** relacionadas con la
-conexión a Supabase.
+Antes de ejecutar el cron, es **imprescindible configurar correctamente las variables de entorno** relacionadas con la
+conexión a la base de datos y, de manera opcional, el servicio de correo.
 
-### Variables necesarias:
+### 1️⃣ Variables necesarias para la base de datos
 
 | Variable  | Descripción                                 |
 |-----------|---------------------------------------------|
@@ -65,8 +66,25 @@ conexión a Supabase.
 
 
 > ⚠️ **Importante:**  
-> Si estas variables no se definen correctamente, el cron **no podrá establecer conexión con la base de datos** y **no
-se iniciará el proceso de actualización**.
+> Si estas variables no se definen correctamente, los servicios **no podrán establecer conexión con la base de datos** y
+**no se iniciará el proceso de actualización**.
+
+---
+
+### 2️⃣ Variables de entorno para el correo (opcional)
+
+Para habilitar el envío de notificaciones por correo (alertas de errores o avisos importantes), se deben definir estas
+variables de entorno:
+
+| Variable            | Descripción                                                      |
+|---------------------|------------------------------------------------------------------|
+| `ENV_MAIL_EMAIL`    | Dirección de correo desde la que se enviarán los mensajes        |
+| `ENV_MAIL_PASSWORD` | Contraseña (mucho mejor Token de acceso) de la cuenta de correo  |
+| `ENV_MAIL_TO_EMAIL` | Dirección o lista de correos destinatarios de las notificaciones |
+
+> ⚠️ **Recomendación de seguridad:**
+> - Nunca incluir la contraseña (`ENV_MAIL_PASSWORD`) directamente en el repositorio.
+> - Defínela como variable de entorno en el servidor:
 
 ---
 
@@ -75,7 +93,8 @@ se iniciará el proceso de actualización**.
 ### ⏱️ Ejecución programada
 
 El cron se activa automáticamente **cada 30 minutos** mediante un planificador interno basado en
-`ScheduledExecutorService`. La programación es configurable desde las properties del proyecto.
+`ScheduledExecutorService` mediante la libería de Quartz. La programación es configurable desde las properties del
+proyecto.
 
 ### 🌐 Obtención de datos
 
@@ -88,7 +107,7 @@ Los datos recibidos se transforman en entidades (`EESS`, `Municipio`, `Provincia
 
 ### 💾 Persistencia eficiente
 
-Las entidades se sincronizan con la base de datos Supabase usando **operaciones por lotes (batch)** y **procesamiento
+Las entidades se sincronizan con la base de datos Supabase usando **operaciones por lotes (batch)** o **procesamiento
 concurrente con hilos** para optimizar el rendimiento.
 
 ### 📋 Registro de actividad
@@ -98,26 +117,11 @@ Cada ejecución genera logs detallados con:
 - Número de estaciones procesadas.
 - Errores detectados.
 - Tiempo total de ejecución.
+- etc
 
 ---
 
 ## ⚠️ Principales desafíos técnicos
-
-### 🧵 Gestión de hilos y concurrencia
-
-Uno de los mayores retos fue la **gestión eficiente del gran volumen de datos** (más de 10.000 estaciones por
-actualización).  
-Procesar y almacenar esta cantidad en un tiempo razonable requería:
-
-- Uso de `ExecutorService` y `CompletableFuture` para ejecución multihilo.
-- Control estricto del número de hilos concurrentes.
-- Sincronización de colecciones compartidas.
-- Cierre correcto de `EntityManager` y conexiones al finalizar cada tarea.
-
-Sin estas medidas, aparecían **fugas de memoria**, **bloqueos** y **errores de conexión**.  
-El código actual implementa una solución robusta que equilibra concurrencia, rendimiento y estabilidad.
-
----
 
 ### 🌐 Problema con IPv4 e IPv6 en Supabase
 
@@ -137,7 +141,7 @@ local intentaba conectarse por IPv4.
   conexiones IPV4.
 - En entornos sin IPv6, usar **contenedores o máquinas dual-stack (IPv4/IPv6)** para permitir la conexión.
 
-*En el sistema final la BD será local, en un servior porpio por lo que no habrá este problema.
+*En el sistema final la BD será local, en un servior propio por lo que no habrá este problema.
 
 ---
 
@@ -159,9 +163,60 @@ lenta y menos estable para uso en producción).
 ## 🚀 Estado actual
 
 - ✅ Código operativo y funcional.
-- ⚙️ Persistencia concurrente estable y validada.
+- ⚙️ Persistencia estable y validada.
 - 🔄 Sistema de cron en producción cada 30 minutos.
 - 🧩 Pendiente de optimizaciones menores y mejora del sistema de logs.
+
+---
+
+## 🛠️ Sistema de despliegue
+
+El despliegue de los servicios *cron* y *backend* en el servidor se realiza mediante un **sistema de auto-actualización
+automática**.  
+Este sistema se encarga de:
+
+- Comprobar periódicamente si hay nuevas releases publicadas en GitHub.
+- Descargar y reemplazar los JAR correspondientes.
+- Reiniciar los servicios de forma segura.
+- Garantizar arranque automático tras reinicios del servidor.
+
+Este enfoque permite mantener los servicios **actualizados y seguros** sin exponer puertos ni la IP del servidor,
+evitando la necesidad de CI/CD remoto que conecte directamente con la infraestructura.
+
+> Para ver todos los detalles de configuración, scripts, servicios systemd y timers, consulta el repositorio completo:  
+> [Server-Cron-Backend-AutoUpdate](https://github.com/CarburoApp/Server-Cron-Backend-AutoUpdate.git)
+
+---
+
+## ⚙️ Configuración del Cron
+
+El cron dispone de **archivos de propiedades** que permiten ajustar su comportamiento y adaptarlo a diferentes entornos
+o bases de datos.
+
+### Archivos principales
+
+1. **`application.properties`**  
+   Contiene la configuración general del cron, incluyendo conexión a la base de datos, parámetros del scheduler, logging
+   y correo.
+
+2. **`queries.properties`**  
+   Contiene las consultas SQL que se ejecutan para sincronizar los datos con la base de datos.
+   > ⚠️ Si cambias la estructura de la BD o deseas personalizar las consultas, aquí es donde se deben adaptar.
+
+3. **Endpoints de la API**  
+   Los endpoints utilizados para obtener los datos desde la API del MITMA están definidos dentro del proyecto y pueden
+   modificarse si fuese necesario cambiar la fuente de datos.
+
+### Uso de la carpeta `/config`
+
+- Si existe la carpeta `/config` dentro del directorio donde se encuentra el cron, **el servicio cargará los archivos de ahí**.
+- Si no existe, el cron **usará los valores por defecto** incluidos en el JAR, debiendo, aún así, introducir las variables de entorno.
+- Esto permite:
+  - Mantener configuraciones personalizadas sin modificar el JAR original.
+  - Adaptar queries, endpoints o propiedades generales de forma sencilla según el entorno.
+
+> 🔹 **Recomendación:**  
+> Puedes crear tus propias versiones de `application.properties`, `queries.properties` y `endpoints.properties` dentro de `/config` para ajustar el cron a entornos específicos, bases de datos distintas o cambios en la API.
 
 ---
 
