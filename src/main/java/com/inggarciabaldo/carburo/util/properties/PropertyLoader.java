@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 /**
  * Clase singleton para manejar propiedades de la aplicación.
  * <p>
- * Permite cargar múltiples archivos de propiedades (application, endpoints, jsonKeys, queries)
+ * Permite cargar múltiples archivos de propiedades (application, endpoints, queries)
  * y acceder a sus valores de manera centralizada. Garantiza que solo exista una instancia
  * de la clase durante toda la ejecución de la aplicación.
  * <p>
@@ -33,7 +33,6 @@ public final class PropertyLoader {
 	private static final String CONFIG_FOLDER = "config";
 	private static final String APPLICATION_PROPERTIES = "application.properties";
 	private static final String ENDPOINTS_PROPERTIES = "endpoints.properties";
-	private static final String JSON_KEYS_PROPERTIES = "jsonKeys.properties";
 	private static final String QUERIES_PROPERTIES = "queries.properties";
 
 	// ==============================
@@ -41,7 +40,6 @@ public final class PropertyLoader {
 	// ==============================
 	private final Properties applicationProps = new Properties(); // configuración general de la aplicación
 	private final Properties endpointsProps = new Properties(); // endpoints de servicios
-	private final Properties jsonKeysProps = new Properties(); // claves JSON o mapeos de datos
 	private final Properties queriesProps = new Properties(); // queries JDBC
 
 	/**
@@ -51,7 +49,6 @@ public final class PropertyLoader {
 	private PropertyLoader() {
 		loadProperties(APPLICATION_PROPERTIES, applicationProps);
 		loadProperties(ENDPOINTS_PROPERTIES, endpointsProps);
-		loadProperties(JSON_KEYS_PROPERTIES, jsonKeysProps);
 		loadProperties(QUERIES_PROPERTIES, queriesProps);
 	}
 
@@ -60,7 +57,7 @@ public final class PropertyLoader {
 	 * <p>
 	 * Esta utilidad permite actualizar dinámicamente los valores de las properties
 	 * sin necesidad de reiniciar la aplicación. Simplemente vuelve a cargar
-	 * application.properties, endpoints.properties, jsonKeys.properties y queries.properties.
+	 * application.properties, endpoints.properties  y queries.properties.
 	 * </p>
 	 *
 	 * <b>Nota:</b> Cualquier property que se haya modificado en disco desde la carga inicial
@@ -72,7 +69,6 @@ public final class PropertyLoader {
 
 		loadProperties(APPLICATION_PROPERTIES, applicationProps);
 		loadProperties(ENDPOINTS_PROPERTIES, endpointsProps);
-		loadProperties(JSON_KEYS_PROPERTIES, jsonKeysProps);
 		loadProperties(QUERIES_PROPERTIES, queriesProps);
 
 		Loggers.GENERAL.info("RECARGADA de TODAS las PROPIEDADES correctamente desde disco.");
@@ -192,15 +188,6 @@ public final class PropertyLoader {
 		return endpointsProps;
 	}
 
-	/**
-	 * Devuelve todas las propiedades de jsonKeys.properties
-	 *
-	 * @return objeto Properties completo de jsonKeys.properties
-	 */
-	public Properties getJsonKeysProperties() {
-		return jsonKeysProps;
-	}
-
 
 	// ==============================
 	// Métodos para obtener propiedades
@@ -226,15 +213,6 @@ public final class PropertyLoader {
 		return endpointsProps.getProperty(key);
 	}
 
-	/**
-	 * Obtiene el valor de una propiedad de jsonKeys.properties
-	 *
-	 * @param key clave de la propiedad
-	 * @return valor asociado a la clave o null si no existe
-	 */
-	public String getJsonKeyProperty(String key) {
-		return jsonKeysProps.getProperty(key);
-	}
 
 	/**
 	 * Obtiene el valor de una propiedad de queries.properties
@@ -274,15 +252,4 @@ public final class PropertyLoader {
 		return endpointsProps.getProperty(key, defaultValue);
 	}
 
-	/**
-	 * Obtiene el valor de una propiedad de jsonKeys.properties, devolviendo un valor por defecto
-	 * si la clave no existe.
-	 *
-	 * @param key          clave de la propiedad
-	 * @param defaultValue valor por defecto si la propiedad no existe
-	 * @return valor de la propiedad o defaultValue
-	 */
-	public String getJsonKeyProperty(String key, String defaultValue) {
-		return jsonKeysProps.getProperty(key, defaultValue);
-	}
 }

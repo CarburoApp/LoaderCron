@@ -18,9 +18,6 @@ import java.util.Properties;
  */
 public abstract class BasePropertyDeserializer<T> implements JsonDeserializer<T> {
 
-	protected static final Properties keys = PropertyLoader.getInstance()
-			.getJsonKeysProperties();
-
 	protected static final Type LIST_ES_PARSER_TYPE = new TypeToken<List<ESParserDTO>>() {}.getType();
 
 	/**
