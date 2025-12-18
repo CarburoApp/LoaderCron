@@ -14,7 +14,9 @@ import com.inggarciabaldo.carburo.application.rest.parser.EETTReqResParser;
 import com.inggarciabaldo.carburo.config.cache.ApplicationCache;
 import com.inggarciabaldo.carburo.config.parser.deserialize.ESParserDTODeserializer;
 import com.inggarciabaldo.carburo.config.persistencia.jdbc.Jdbc;
-import com.inggarciabaldo.carburo.util.email.JobEmailSender;
+import com.inggarciabaldo.carburo.util.email.EmailSender;
+import com.inggarciabaldo.carburo.util.email.strategies.CorrectJobExecutionConstructStrategy;
+import com.inggarciabaldo.carburo.util.email.strategies.FailedJobExecutionConstructStrategy;
 import com.inggarciabaldo.carburo.util.log.Loggers;
 import com.inggarciabaldo.carburo.util.properties.PropertyLoader;
 import org.json.JSONObject;
@@ -32,33 +34,66 @@ import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.API_KEY_
 import static com.inggarciabaldo.carburo.config.parser.api.ResponseKeys.API_KEY_RESP_RES_CONSULTA;
 
 /**
- * Job de Quartz que se ejecuta periódicamente para:
- * 1. Obtener todas las estaciones mediante GasStationHttpRequest.
- * 2. Parsear cada EESS y sus precios
- * 3. Persistir en la base de datos usando JDBC aquellos datos que resulten convenientes.
- * - Registra tiempos y genera resumen final
- * <p>
- * La ejecución está protegida para que cualquier error no afecte al cron.
+ * Job Quartz encargado de la recolección, parseo y persistencia
+ * de estaciones de servicio obtenidas desde una API externa.
+ *<p>
+ * El flujo está diseñado para:
+ * - Detectar errores en cada fase
+ * - Anular el cron de forma controlada
+ * - Registrar trazas completas
+ * - Notificar por correo cualquier fallo no planificado
  */
 public class EESSRecolectorJobParser implements Job {
 
-	/**
-	 * Constantes
-	 */
-	public static final String LOG_ETIQUETA_INICIAL_CRON_ANULADO = "CRON ANULADO: ";
-	public static final String LOG_ETIQUETA_INICIAL_FALLO_GUARDADO_JSON_FILE = "Fallo en el guardado de archivo. ";
 
-	/**
-	 * Utilidades de control
-	 */
-	// Logger específico para la aplicación y para el cron
+	/* =====================================================
+	 * =============== CONSTANTES DE LOG ===================
+	 * ===================================================== */
+
+	private static final String LOG_CRON_START = "<<< Activación del CRON >>> Hora de inicio: {}";
+
+	private static final String LOG_CRON_END = "<<< CRON Finalizado >>> Hora de fin: {}. ¿Correo enviado? {}.";
+
+	private static final String LOG_CRON_ABORTED = "<<< CRON INTERRUMPIDO POR ERROR NO PLANIFICADO >>>";
+
+	private static final String LOG_PREFIX_ABORT = "CRON ANULADO: ";
+
+	private static final String LOG_DB_CONNECTION_ERROR = "No se pudo establecer conexión con la base de datos.";
+
+	private static final String LOG_API_INVALID_RESPONSE = "Respuesta JSON inválida obtenida desde la API.";
+
+	private static final String LOG_NO_EESS_PARSED = "No se parseó ninguna estación correctamente..";
+
+	private static final String LOG_JSON_SAVE_ERROR = "Fallo en el guardado del archivo JSON de respuesta.";
+
+	private static final String LOG_PERSISTENCE_ERROR = "Error inesperado durante la fase de persistencia.";
+
+	/* =====================================================
+	 * ================== CONFIG API =======================
+	 * ===================================================== */
+
+	private static final String PROP_MAX_REINTENTOS = "cron.httpReq.intentos";
+
+	private static final String PROP_TIEMPO_SLEEP_MS = "cron.httpReq.tiempoMiliSegundos.entre.intentos";
+
+	private static final int DEFAULT_MAX_REINTENTOS = 3;
+	private static final long DEFAULT_SLEEP_MS = 20_000L;
+
+	/* =====================================================
+	 * ==================== CAMPOS =========================
+	 * ===================================================== */
+
 	private static final Logger loggerCron = Loggers.CRON;
+	public static final String EJECUCION_PRINCIPAL_DEL_JOB = "Ejecución principal del Job";
+	public static final String LOG_DTO_RECUPERADO_VACIO = "El dto recuperado tiene 0 estaciones de servicio. Se procede a detener el cron.";
 
+	private FileAppender<ILoggingEvent> appender;
 
-	/**
-	 * Datos de ejecución
-	 */
-	private final DatoDeEjecucion datoDeEjecucion = new DatoDeEjecucion();
+	private final DatosDeEjecucion datosEjecucion = new DatosDeEjecucion();
+
+	/* =====================================================
+	 * ==================== EXECUTE ========================
+	 * ===================================================== */
 
 	/**
 	 * Job principal que se ejecuta periódicamente.
@@ -72,166 +107,182 @@ public class EESSRecolectorJobParser implements Job {
 	 * 3. Extraer todos los datos del JSON a los DTOs correspondientes
 	 * 4. Comenzar el parseo de los metadatos obtenidos de la API.
 	 * 5. Por cada elemento dentro del JSON.
-	 * 		5.1. Parsear la estación de servicio.
-	 *  	5.2. Comprobar si la estación ya existe en BD. En caso contrario se persistirá.
-	 *  	5.3. Si la estación ya existe, comprobar si alguno de sus datos ha cambiado.
-	 *  	5.4. Una vez la estación en la BD esté actualizada, proceder a parsear sus precios.
-	 *  	5.5. Por cada precio parseado, comprobar si ya existe en BD el dato diario, en caso contrario persistir este.
-	 *  6. Una vez todas las estaciones y precios hayan sido parseados y persistidos, cerrar la conexión con la BD.
-	 *  7. Registrar en el log el resumen de la ejecución del cron.
-	 *  8. Enviar el informe vía email a los administradores del sistema.
-	 *  9. Finalizar la ejecución del cron.
+	 * 5.1. Parsear la estación de servicio.
+	 * 5.2. Comprobar si la estación ya existe en BD. En caso contrario se persistirá.
+	 * 5.3. Si la estación ya existe, comprobar si alguno de sus datos ha cambiado.
+	 * 5.4. Una vez la estación en la BD esté actualizada, proceder a parsear sus precios.
+	 * 5.5. Por cada precio parseado, comprobar si ya existe en BD el dato diario, en caso contrario persistir este.
+	 * 6. Una vez todas las estaciones y precios hayan sido parseados y persistidos, cerrar la conexión con la BD.
+	 * 7. Registrar en el log el resumen de la ejecución del cron.
+	 * 8. Enviar el informe vía email a los administradores del sistema.
+	 * 9. Finalizar la ejecución del cron.
 	 *
 	 * @param context Contexto de ejecución del Job proporcionado por Quartz
 	 */
 	@Override
 	public void execute(JobExecutionContext context) {
+		inicializarEjecucion();
+		long inicioCronMs = System.currentTimeMillis();
+
+		try {
+			recargarProperties();
+			// Abrir una conexión con la BD para realizar comprobar si se pueden realizar las operaciones necesarias.
+			comprobarConexionBD();
+
+			// Realizar la petición a la API externa para obtener los datos,
+			JSONObject json = obtenerDatosDesdeAPI();
+			// Extraer todos los datos del JSON a los DTOs correspondientes
+			EETTReqResParserDTO dto = mapearJsonADTO(json);
+
+			if (dto.getListaEESS().isEmpty()) {
+				loggerCron.warn(LOG_DTO_RECUPERADO_VACIO);
+				datosEjecucion.addWarning(LOG_DTO_RECUPERADO_VACIO);
+				finalizarEjecucionCorrecta(inicioCronMs);
+				return;
+			}
+
+			List<EstacionDeServicio> estaciones = parsearEstaciones(dto);
+			persistirEstaciones(estaciones);
+			finalizarEjecucionCorrecta(inicioCronMs);
+		} catch (Throwable t) {
+			anularCronPorErrorNoPlanificado(t);
+		} finally {
+			liberarRecursos();
+		}
+	}
+
+	/* =====================================================
+	 * =============== MÉTODOS DE FASE =====================
+	 * ===================================================== */
+
+	private void inicializarEjecucion() {
 		// Fecha de inicio de ejecución
-		datoDeEjecucion.fechaInicioEjecucion = LocalDateTime.now();
+		datosEjecucion.setFechaInicioEjecucion(LocalDateTime.now());
 
-		//Configuración del logger especifico.
-		FileAppender<ILoggingEvent> cronAppender = Loggers.createCronExecutionAppender(
-				datoDeEjecucion.fechaInicioEjecucion);
-		Logger logger = Loggers.CRON;
-		logger.addAppender(cronAppender);
-		logger = Loggers.GENERAL;
-		logger.addAppender(cronAppender);
-		logger = Loggers.DB;
-		logger.addAppender(cronAppender);
-		logger = Loggers.PARSE;
-		logger.addAppender(cronAppender);
+		configurarAppenderLogs(datosEjecucion.getFechaInicioEjecucion());
+		loggerCron.info(LOG_CRON_START, datosEjecucion.formatoHora(
+				datosEjecucion.getFechaInicioEjecucion()));
+	}
 
-		loggerCron.info("<<< Activación del CRON >>> Hora de inicio: {}",
-						datoDeEjecucion.formatoHora(
-								datoDeEjecucion.fechaInicioEjecucion));
-
-		long tiempoInicioCron = System.currentTimeMillis();
-
-		// 0. Recargar las properties del sistema
+	private void recargarProperties() {
 		PropertyLoader.getInstance().reloadProperties();
+	}
 
-		/*
-		 * 1. Abrir una conexión con la BD para realizar comprobar si se pueden realizar las operaciones necesarias.
-		 */
+	private void comprobarConexionBD() throws IOException {
+		if (!Jdbc.testConnection()) throw new IOException(LOG_DB_CONNECTION_ERROR);
+	}
+
+	private JSONObject obtenerDatosDesdeAPI() {
 		try {
-			comprobarConexionConLaBD(); // Si falla lo registra y lanza excepción.
-		} catch (Throwable e) {
-			return;
-		}
-
-		/*
-		 * 2. Realizar la petición a la API externa para obtener los datos, válidar la respuesta y almacenar la respuesta.
-		 *  En caso de que alguno de los puntos anteriores falle se suspende el cron.
-		 */
-
-		JSONObject jsonRespuestaAPI;
-		// Hacemos la petición a la API y recuperamos el JSON de respuesta.
-		try {
-			jsonRespuestaAPI = doAPIReqAndIsRespOK(); // Si falla lo registra y lanza excepción.
-		} catch (IllegalStateException e) {
-			loggerCron.error(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
-									 "Error al extraer los datos JSON de estaciones a un DTO: {}",
-							 e.getMessage(), e);
-			return;
-		}
-
-		/*
-		 * 3. Extraer todos los datos del JSON a los DTOs correspondientes
-		 */
-		//Defino el DTO de la petición
-		EETTReqResParserDTO apiRequestDto;
-		try {
-			apiRequestDto = extraeDatosDesdeJSONaDTO(jsonRespuestaAPI);
-		} catch (JsonSyntaxException e) {
-			return;
-		}
-		if (this.datoDeEjecucion.totalEESSEnDTO == 0) {
-			return;
-		}
-
-		/*
-		 * 4. Comenzar el parseo de los metadatos obtenidos de la API.
-		 *	 5. Por cada elemento dentro del JSON.
-		 *	 		5.1. Parsear la estación de servicio.
-		 *	  	5.2. Comprobar si la estación ya existe en BD. En caso contrario se persistirá.
-		 *				 	5.3. Si la estación ya existe, comprobar si alguno de sus datos ha cambiado.
-		 *				 	5.4. Una vez la estación en la BD esté actualizada, proceder a parsear sus precios.
-		 *	  	5.5. Por cada precio parseado, comprobar si ya existe en BD el dato diario, en caso contrario persistir este.
-		 */
-		List<EstacionDeServicio> listadoDeEESSObtenidas = doESDtoParseToES(apiRequestDto);
-		if (listadoDeEESSObtenidas == null ||
-				this.datoDeEjecucion.totalEESSParseadas == 0) {
-			loggerCron.warn(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
-									"No se parseó ninguna estación correctamente. CRON finalizado.");
-			return;
-		}
-
-		// Persistencia
-		try {
-			ProcesadoDePersistenciaEESSaBD procesador;
-			loggerCron.info("Comienza la fase de persistencia.");
-			procesador = new ProcesadoDePersistenciaEESSaBD(listadoDeEESSObtenidas,
-															datoDeEjecucion);
-			loggerCron.info("Objeto de procesamiento creado correctamente.");
-			long tiempoInicioPersistencia = System.currentTimeMillis();
-			procesador.procesar();
-			this.datoDeEjecucion.tiempoPersistenciaMs =
-					System.currentTimeMillis() - tiempoInicioPersistencia;
+			return doAPIReqAndIsRespOK();
 		} catch (Exception e) {
-			loggerCron.info(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
-									"Error inesperado en la fase de persistencia: {}",
-							e.getMessage(), e);
-			return;
+			throw new IllegalStateException(LOG_API_INVALID_RESPONSE, e);
+		}
+	}
+
+	private EETTReqResParserDTO mapearJsonADTO(JSONObject json) {
+		try {
+			return extraeDatosDesdeJSONaDTO(json);
+		} catch (JsonSyntaxException e) {
+			throw new IllegalStateException("Error parseando JSON a DTO.", e);
+		}
+	}
+
+	private List<EstacionDeServicio> parsearEstaciones(EETTReqResParserDTO dto) {
+		List<EstacionDeServicio> estaciones = doESDtoParseToES(dto);
+		if (estaciones == null || estaciones.isEmpty())
+			throw new IllegalStateException(LOG_NO_EESS_PARSED);
+		return estaciones;
+	}
+
+	private void persistirEstaciones(List<EstacionDeServicio> estaciones) {
+		try {
+			long inicio = System.currentTimeMillis();
+			new ProcesadoDePersistenciaEESSaBD(estaciones, datosEjecucion).procesar();
+			datosEjecucion.setTiempoTotalPersistenciaMs(
+					System.currentTimeMillis() - inicio);
+		} catch (Exception e) {
+			throw new IllegalStateException(LOG_PERSISTENCE_ERROR, e);
+		}
+	}
+
+	/* =====================================================
+	 * =================== FINALIZACIÓN ====================
+	 * ===================================================== */
+
+	private void finalizarEjecucionCorrecta(long inicioCronMs) {
+		datosEjecucion.setTiempoTotalCronMs(System.currentTimeMillis() - inicioCronMs);
+
+		datosEjecucion.setFechaFinEjecucion(LocalDateTime.now());
+		// Registro del resumen en el log
+		loggerCron.info(datosEjecucion.getInformeEjecucion());
+
+		boolean enviado = enviarCorreoEjecucionCorrecta();
+
+		loggerCron.info(LOG_CRON_END,
+						datosEjecucion.formatoHora(datosEjecucion.getFechaFinEjecucion()),
+						enviado ? "Sí" : "No");
+	}
+
+	private boolean enviarCorreoEjecucionCorrecta() {
+		try {
+			new EmailSender(
+					new CorrectJobExecutionConstructStrategy(datosEjecucion)).sendEmail();
+			return true;
+		} catch (Exception e) {
+			loggerCron.error("Error enviando informe de ejecución.", e);
+			return false;
+		}
+	}
+
+	/* =====================================================
+	 * ============ ANULACIÓN CONTROLADA ===================
+	 * ===================================================== */
+
+	private void anularCronPorErrorNoPlanificado(Throwable causa) {
+
+		datosEjecucion.setFechaFinEjecucion(LocalDateTime.now());
+
+		loggerCron.error(LOG_PREFIX_ABORT + "{}. Motivo: {}",
+						 EESSRecolectorJobParser.EJECUCION_PRINCIPAL_DEL_JOB,
+						 causa.getMessage(), causa);
+
+		try {
+			new EmailSender(new FailedJobExecutionConstructStrategy(datosEjecucion,
+																	causa)).sendEmail();
+		} catch (Exception e) {
+			loggerCron.error("No se pudo enviar el correo de error del cron.", e);
 		}
 
-		/*
-		 * 6. Una vez todas las estaciones y precios hayan sido parseados y persistidos, cerrar la conexión con la BD.
-		 * 7. Registrar en el log el resumen de la ejecución del cron.
-		 * 8. Enviar el informe vía email a los administradores del sistema.
-		 * 9. Finalizar la ejecución del cron.
-		 */
-		this.datoDeEjecucion.tiempoTotalCron =
-				System.currentTimeMillis() - tiempoInicioCron;
-		// Dado que es el fin del ciclo de vida limpiamos cualquier recurso abierto
+		loggerCron.info(LOG_CRON_ABORTED);
+	}
+
+	/* =====================================================
+	 * ================= UTILIDADES ========================
+	 * ===================================================== */
+
+	private void configurarAppenderLogs(LocalDateTime inicio) {
+		appender = Loggers.createCronExecutionAppender(inicio, datosEjecucion);
+		Loggers.CRON.addAppender(appender);
+		Loggers.GENERAL.addAppender(appender);
+		Loggers.DB.addAppender(appender);
+		Loggers.PARSE.addAppender(appender);
+	}
+
+	private void liberarRecursos() {
+		//Liberamos la caché
 		ApplicationCache.instance.clearCache();
-		finEjecucionCronYRegistroInformeEjecucion();
 
 		// Desacoplamos la redirección de los logs.
-		cronAppender.stop();
-		logger = Loggers.CRON;
-		logger.detachAppender(cronAppender);
-		logger = Loggers.GENERAL;
-		logger.detachAppender(cronAppender);
-		logger = Loggers.DB;
-		logger.detachAppender(cronAppender);
-		logger = Loggers.PARSE;
-		logger.detachAppender(cronAppender);
+		if (appender != null) {
+			appender.stop();
+			Loggers.CRON.detachAppender(appender);
+			Loggers.GENERAL.detachAppender(appender);
+			Loggers.DB.detachAppender(appender);
+			Loggers.PARSE.detachAppender(appender);
+		}
 	}
 
-	/**
-	 * Comprueba la conexión con la base de datos.
-	 * Si no se puede conectar, lanza una excepción para cancelar el cron.
-	 */
-	private void comprobarConexionConLaBD() throws Throwable {
-		if (Jdbc.testConnection()) return;
-		// Si no se puede conectar a la BD, cancelar el cron
-		loggerCron.error(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
-								 "no se pudo establecer conexión con la base de datos.");
-		throw new IOException("No se pudo establecer conexión con la base de datos.");
-	}
-
-
-	/**
-	 * Claves para las properties de configuración de la llamada a la API
-	 */
-	private static final String PROP_MAX_REINTENTOS = "cron.httpReq.intentos";
-	private static final String PROP_TIEMPO_SLEEP_MS = "cron.httpReq.tiempoMiliSegundos.entre.intentos";
-
-	/**
-	 * Valores por defecto si no están configuradas las properties
-	 */
-	private static final int DEFAULT_MAX_REINTENTOS = 3;
-	private static final long DEFAULT_SLEEP_MS = 20_000L; // 20 segundos
 
 	/**
 	 * Obtiene el JSON de estaciones desde la API externa, validando la respuesta.
@@ -250,7 +301,6 @@ public class EESSRecolectorJobParser implements Job {
 		long sleepMs = Long.parseLong(loader.getApplicationProperty(PROP_TIEMPO_SLEEP_MS,
 																	String.valueOf(
 																			DEFAULT_SLEEP_MS)));
-
 		for (int nIntento = 1; nIntento <= maxIntentos; nIntento++) {
 			long inicioPeticion = System.currentTimeMillis();
 			try {
@@ -262,35 +312,35 @@ public class EESSRecolectorJobParser implements Job {
 				JSONObject respuestaAPI = request.getAllStations();
 
 				// Calculamos el tiempo de respuesta
-				this.datoDeEjecucion.tiempoPeticionApiMs =
-						System.currentTimeMillis() - inicioPeticion;
+				datosEjecucion.setTiempoTotalHttpRequestMs(
+						System.currentTimeMillis() - inicioPeticion);
 
 				// Validamos la estructura de la respuesta
 				if (respuestaAPI.keySet().contains(API_KEY_RESP_RES_CONSULTA) &&
 						respuestaAPI.keySet().contains(API_KEY_RESP_RES_CONSULTA) &&
 						respuestaAPI.keySet().contains(API_KEY_RESP_LISTADO_EESS)) {
-
+					datosEjecucion.setApiRespuestaValida(true);
+					datosEjecucion.setApiHttpIntentosRealizados(nIntento);
 					// Guardamos información adicional para seguimiento
-					this.datoDeEjecucion.totalEESSEnJson = respuestaAPI.getJSONArray(
-							API_KEY_RESP_LISTADO_EESS).length();
-
+					datosEjecucion.setApiTotalEESSRecibidasJson(
+							respuestaAPI.getJSONArray(API_KEY_RESP_LISTADO_EESS)
+									.length());
 					// Guardamos la respuesta en archivo para auditoría/debug
 					guardarRespuestaAPIEnArchivo(respuestaAPI);
 
 					loggerCron.info("Respuesta API válida obtenida en {} ms.",
-									this.datoDeEjecucion.tiempoPeticionApiMs);
+									datosEjecucion.getTiempoTotalHttpRequestMs());
 					return respuestaAPI;
 				}
 
 				// Si llegamos aquí, la respuesta no es válida
 				IllegalStateException e = new IllegalStateException(
-						LOG_ETIQUETA_INICIAL_CRON_ANULADO +
-								"ERROR al VALIDAR la RESPUESTA JSON de la API.");
+						"ERROR al VALIDAR la RESPUESTA JSON de la API.");
 				loggerCron.error(e.getMessage());
 				throw e;
 
 			} catch (Exception e) {
-				loggerCron.error(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
+				loggerCron.error(
 										 "ERROR al REALIZAR la PETICIÓN HTTP a la API en el intento número {}: {}",
 								 nIntento, e.getMessage(), e);
 
@@ -311,7 +361,7 @@ public class EESSRecolectorJobParser implements Job {
 			}
 		}
 		// Si ya superamos los reintentos, lanzamos excepción final
-		throw new IllegalStateException(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
+		throw new IllegalStateException(
 												"NO se pudo obtener una RESPUESTA válida de la API tras " +
 												maxIntentos + " intentos.");
 	}
@@ -332,12 +382,15 @@ public class EESSRecolectorJobParser implements Job {
 		// Mapear JSON a DTO
 		EETTReqResParserDTO dto = gson.fromJson(jsonRespuestaAPI.toString(),
 												EETTReqResParserDTO.class);
-		this.datoDeEjecucion.tiempoJSONParseoDTOMs =
-				System.currentTimeMillis() - tiempoInicioEjecucion;
-		this.datoDeEjecucion.totalEESSEnDTO        = dto.getListaEESS().size();
-		if (this.datoDeEjecucion.totalEESSEnDTO == 0) loggerCron.warn(
-				LOG_ETIQUETA_INICIAL_CRON_ANULADO +
-														 "No se transformado ninguna estación a DTO. CRON finalizado.");
+		datosEjecucion.setParseoJsonADtoTiempoMs(
+				System.currentTimeMillis() - tiempoInicioEjecucion);
+		datosEjecucion.setParseoTotalEESSEnDto(dto.getListaEESS().size());
+		if (datosEjecucion.getParseoTotalEESSEnDto() == 0) {
+			loggerCron.warn(
+					"No se transformado ninguna estación a DTO. CRON finalizado.");
+			datosEjecucion.addWarning(
+					"No se transformado ninguna estación a DTO. CRON finalizado.");
+		}
 		return dto;
 	}
 
@@ -353,26 +406,23 @@ public class EESSRecolectorJobParser implements Job {
 		List<EstacionDeServicio> estacionesDeServicioParseadas = null;
 		// Instanciamos el parser y lanzamos el parseo
 		try {
-			EETTReqResParser parser = new EETTReqResParser(apiRequestDto,
-														   datoDeEjecucion);
+			EETTReqResParser parser = new EETTReqResParser(apiRequestDto, datosEjecucion);
 			{ //Medimos tiempos
 				long tiempoInicioParseo = System.currentTimeMillis();
 				estacionesDeServicioParseadas = parser.parse();
-				this.datoDeEjecucion.tiempoParseoEESSMs =
-						System.currentTimeMillis() - tiempoInicioParseo;
+				datosEjecucion.setTiempoTotalParseoMs(
+						System.currentTimeMillis() - tiempoInicioParseo);
 			}
-			datoDeEjecucion.setFechaDeParser(parser.getFechaDeParser());
+			datosEjecucion.setFechaDeDatosProcesados(
+					datosEjecucion.getFechaDeDatosProcesados());
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			loggerCron.error(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
-									 "Ha ocurrido un error en el parseo de las EESS: {}",
+			loggerCron.error("Ha ocurrido un error en el parseo de las EESS: {}",
 							 e.getMessage(), e);
 		} catch (Exception e) {
-			loggerCron.error(LOG_ETIQUETA_INICIAL_CRON_ANULADO +
-									 "Ha ocurrido un error inesperado en el parseo de las EESS: {}",
+			loggerCron.error(
+					"Ha ocurrido un error inesperado en el parseo de las EESS: {}",
 							 e.getMessage(), e);
 		}
-		this.datoDeEjecucion.totalEESSParseadas = (estacionesDeServicioParseadas ==
-										   null) ? 0 : estacionesDeServicioParseadas.size();
 		return estacionesDeServicioParseadas;
 	}
 
@@ -396,70 +446,47 @@ public class EESSRecolectorJobParser implements Job {
 
 		if (rutaDirectorio.isEmpty()) {
 			// Si no hay ruta, guardamos en el directorio actual
-			this.datoDeEjecucion.jsonRespuestaArchivo = new File(nombreArchivo);
+			datosEjecucion.setArchivoRespuestaApiJson(new File(nombreArchivo));
 		} else {
 			// Si hay ruta, nos aseguramos que exista la carpeta
 			File carpeta = new File(rutaDirectorio);
 			if (!carpeta.exists()) {
 				try {
-					if (!carpeta.mkdirs()) loggerCron.warn(
-							LOG_ETIQUETA_INICIAL_FALLO_GUARDADO_JSON_FILE +
-									"No se pudo crear el directorio: {}", rutaDirectorio);
+					if (!carpeta.mkdirs()) {
+						loggerCron.warn(LOG_JSON_SAVE_ERROR +
+												"No se pudo crear el directorio: {}",
+										rutaDirectorio);
+						datosEjecucion.addWarning(LOG_DTO_RECUPERADO_VACIO);
+					}
 					return;
 				} catch (SecurityException e) {
-					loggerCron.warn(LOG_ETIQUETA_INICIAL_FALLO_GUARDADO_JSON_FILE +
+					loggerCron.warn(LOG_JSON_SAVE_ERROR +
 											"No hay permisos para crear el directorio: {}",
 									rutaDirectorio, e);
 					return;
 				}
 			}
 			if (!carpeta.isDirectory()) {
-				loggerCron.warn(LOG_ETIQUETA_INICIAL_FALLO_GUARDADO_JSON_FILE +
+				loggerCron.warn(LOG_JSON_SAVE_ERROR +
 										"La ruta existe pero no es un directorio: {}",
 								rutaDirectorio);
 				return;
 			}
-			this.datoDeEjecucion.jsonRespuestaArchivo = new File(carpeta, nombreArchivo);
+			datosEjecucion.setArchivoRespuestaApiJson(new File(carpeta, nombreArchivo));
 		}
 
 
 		try (FileWriter writer = new FileWriter(
-				this.datoDeEjecucion.jsonRespuestaArchivo)) {
+				datosEjecucion.getArchivoRespuestaApiJson())) {
 			writer.write(jsonRespuestaAPI.toString(4)); // identación de 4 espacios
 			writer.flush();
 			loggerCron.info(
 					"Almacenada respuesta de la API en la ubicación designada. Bajo el nombre: {}",
-					this.datoDeEjecucion.jsonRespuestaArchivo.getName());
+					datosEjecucion.getArchivoRespuestaApiJson().getName());
 		} catch (IOException e) {
-			loggerCron.error(LOG_ETIQUETA_INICIAL_FALLO_GUARDADO_JSON_FILE +
+			loggerCron.error(LOG_JSON_SAVE_ERROR +
 									 "Error al guardar la respuesta de la API en archivo: {}",
 							 e.getMessage(), e);
 		}
-	}
-
-	/**
-	 * Registra el informe de la ejecución del cron en el log y envía el correo con el informe.
-	 */
-	private void finEjecucionCronYRegistroInformeEjecucion() {
-		this.datoDeEjecucion.fechaFinEjecucion = LocalDateTime.now();
-
-		// Registro del resumen en el log
-		loggerCron.info(this.datoDeEjecucion.getInformeEjecucion());
-
-		//Envío de correo con el informe de la ejecución del
-		boolean isReport = false;
-		try {
-			JobEmailSender emailSender = new JobEmailSender(datoDeEjecucion);
-			emailSender.sendReport();
-			isReport = true;
-		} catch (Exception e) {
-			loggerCron.error("Error enviando informe por correo: {}", e.getMessage(), e);
-		}
-
-		// Log indicando la finalización del cron y el estado del envío del correo
-		loggerCron.info(
-				"<<< CRON Finalizado >>> Hora de fin: {}. ¿Se ha enviado el informe por correo? {}.",
-				datoDeEjecucion.formatoHora(this.datoDeEjecucion.fechaFinEjecucion),
-				isReport ? "Sí" : "No");
 	}
 }

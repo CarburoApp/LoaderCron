@@ -7,6 +7,7 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.FileAppender;
+import com.inggarciabaldo.carburo.scheduler.jobs.DatosDeEjecucion;
 import com.inggarciabaldo.carburo.util.properties.PropertyLoader;
 
 import java.time.LocalDateTime;
@@ -17,14 +18,17 @@ public final class Loggers {
     // ---------------------------------------------------------
     // Constantes de configuración
     // ---------------------------------------------------------
-    private static final String PROP_LOG_DIR = "log.directory";
-    private static final String DEFAULT_LOG_DIR = "./logs";
+    public static final String PROP_LOG_DIR = "log.directory";
+    public static final String DEFAULT_LOG_DIR = "./logs";
 
     private static final String PROP_LOG_PATTERN = "log.pattern";
     private static final String DEFAULT_LOG_PATTERN = "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n";
 
     private static final String PROP_LOG_FILE_MAIN = "log.file.main";
     private static final String DEFAULT_LOG_FILE_MAIN = "main.log";
+
+    public static final String LOG_FILE_CRON_JOB_EXEC = "cron_job_exec_%s.log";
+    public static final String LOG_FILE_CRON_JOB_EXEC_DATETIME_FORMAT = "yyyy_MM_dd_(HH..mm)";
 
     private static final String LOGGER_GENERAL_NAME = "GENERAL";
     private static final String LOGGER_CRON_NAME = "CRON";
@@ -105,19 +109,33 @@ public final class Loggers {
      * Crear un appender único para cada ejecución de cron job.
      */
     public static FileAppender<ILoggingEvent> createCronExecutionAppender(
-            LocalDateTime timestamp) {
+            LocalDateTime timestamp, DatosDeEjecucion datosDeEjecucion) {
+
         LoggerContext context = (LoggerContext) org.slf4j.LoggerFactory.getILoggerFactory();
         String logDir = PropertyLoader.getInstance()
                 .getApplicationProperty(PROP_LOG_DIR, DEFAULT_LOG_DIR).trim();
-        String fileName = String.format("cron_job_exec_%s.log", timestamp.format(
-                DateTimeFormatter.ofPattern("yyyy_MM_dd_(HH..mm)")));
+        String fileName = String.format(LOG_FILE_CRON_JOB_EXEC, timestamp.format(
+                DateTimeFormatter.ofPattern(LOG_FILE_CRON_JOB_EXEC_DATETIME_FORMAT)));
 
+        // Configuración del encoder
         PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setContext(context);
         encoder.setPattern(DEFAULT_LOG_PATTERN);
         encoder.start();
 
-        FileAppender<ILoggingEvent> appender = new FileAppender<>();
+        // FileAppender personalizado en scope
+        FileAppender<ILoggingEvent> appender = new FileAppender<>() {
+            @Override
+            protected void subAppend(ILoggingEvent event) {
+                // Si es WARN o superior, se guarda en DatoDeEjecucion
+                if (event.getLevel()
+                        .isGreaterOrEqual(ch.qos.logback.classic.Level.WARN)) {
+                    datosDeEjecucion.addWarning(event.getFormattedMessage());
+                }
+                super.subAppend(event); // llama al FileAppender original
+            }
+        };
+
         appender.setContext(context);
         appender.setEncoder(encoder);
         appender.setAppend(true);

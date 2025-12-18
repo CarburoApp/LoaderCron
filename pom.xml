@@ -18,8 +18,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>23</maven.compiler.source>
-        <maven.compiler.target>23</maven.compiler.target>
+        <maven.compiler.release>23</maven.compiler.release>
+        <main.class>com.inggarciabaldo.carburo.app.CronLauncher</main.class>
+
+        <config.dir>${project.basedir}/Config</config.dir>
     </properties>
 
     <dependencies>
@@ -36,7 +38,6 @@
             <artifactId>quartz</artifactId>
             <version>2.5.2</version>
         </dependency>
-
 
         <!-- Retrofit -->
         <dependency>
@@ -120,30 +121,39 @@
 
     <build>
         <plugins>
-            <!-- Maven Compiler -->
+
+            <!-- Compila - Maven Compiler -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
-                    <release>23</release>
+                    <release>${java.version}</release>
                 </configuration>
             </plugin>
 
             <!-- Maven JAR ejecutable -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
+                <artifactId>maven-shade-plugin</artifactId>
                 <version>3.5.0</version>
-                <configuration>
-
-                    <archive>
-                        <manifest>
-                            <addClasspath>true</addClasspath>
-                            <mainClass>com.inggarciabaldo.carburo.CronLauncher</mainClass>
-                        </manifest>
-                    </archive>
-                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>${main.class}</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

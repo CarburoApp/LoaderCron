@@ -5,9 +5,8 @@ import com.inggarciabaldo.carburo.application.model.EstacionDeServicio;
 import com.inggarciabaldo.carburo.application.rest.dto.EETTReqResParserDTO;
 import com.inggarciabaldo.carburo.application.rest.dto.ESParserDTO;
 import com.inggarciabaldo.carburo.application.service.ServiceFactory;
-import com.inggarciabaldo.carburo.scheduler.jobs.DatoDeEjecucion;
+import com.inggarciabaldo.carburo.scheduler.jobs.DatosDeEjecucion;
 import com.inggarciabaldo.carburo.util.log.Loggers;
-import lombok.Getter;
 import org.slf4j.Logger;
 
 import java.time.LocalDate;
@@ -45,19 +44,17 @@ public class EETTReqResParser {
 	/**
 	 * Datos de ejecución
 	 */
-	@Getter
-	private final LocalDate fechaDeParser;
 	private final EETTReqResParserDTO dto;
-	private final DatoDeEjecucion datoDeEjecucion;
+	private final DatosDeEjecucion datosDeEjecucion;
 
 	/**
 	 * Constructor del parser, que recibe el DTO ya deserializado.
 	 *
 	 * @param dto DTO recibido de la API ya deserializado.
-	 * @param datoDeEjecucion Datos de ejecución del cron actual.
+	 * @param datosDeEjecucion Datos de ejecución del cron actual.
 	 * @throws IllegalArgumentException Si el DTO es nulo o no contiene datos válidos.
 	 */
-	public EETTReqResParser(EETTReqResParserDTO dto, DatoDeEjecucion datoDeEjecucion) {
+	public EETTReqResParser(EETTReqResParserDTO dto, DatosDeEjecucion datosDeEjecucion) {
 		loggerParse.info(ETIQUETA_LOGGER +
 								 "Inicializando el parser de EETTReqResParser para el DTO recibido.");
 		if (dto == null) {
@@ -68,11 +65,11 @@ public class EETTReqResParser {
 
 		this.dto = dto;
 
-		this.datoDeEjecucion = datoDeEjecucion;
+		this.datosDeEjecucion = datosDeEjecucion;
 
-		this.fechaDeParser = parseFecha();
+		datosDeEjecucion.setFechaDeDatosProcesados(parseFecha());
 		// Comprobar que la fecha es el mismo día que hoy
-		if (!LocalDate.now().equals(fechaDeParser)) {
+		if (!LocalDate.now().equals(datosDeEjecucion.getFechaDeDatosProcesados())) {
 			throw new IllegalArgumentException("La fecha no corresponde al día actual");
 		}
 		loggerParse.info(ETIQUETA_LOGGER +
@@ -179,17 +176,15 @@ public class EETTReqResParser {
 			}
 			if (estacionDeServicio != null) resultado.add(estacionDeServicio);
 		}
-
-		datoDeEjecucion.setTiempoDTOParseoEntidades(
-				System.currentTimeMillis() - inicioParseoEESSMs);
-
-		datoDeEjecucion.setTotalEESSParseadas(resultado.size());
-		datoDeEjecucion.setTotalEESSNoParseadasConErrores(conFallos.size());
+		datosDeEjecucion.setParseoEESSTotal(listaEESS.size());
+		datosDeEjecucion.setParseoEESSCorrectas(resultado.size());
+		datosDeEjecucion.setParseoEESSErroneas(conFallos.size());
 
 		loggerParse.info(ETIQUETA_LOGGER +
 								 "Fin de parseo del DTO recibido. Se han parseado correctamente {} EESS de las {} indicadas en el DTO inicial. Con errores: {}.",
-						 datoDeEjecucion.getTotalEESSParseadas(), listaEESS.size(),
-						 datoDeEjecucion.getTotalEESSNoParseadasConErrores());
+						 datosDeEjecucion.getParseoEESSCorrectas(),
+						 datosDeEjecucion.getParseoEESSTotal(),
+						 datosDeEjecucion.getParseoEESSErroneas());
 		return resultado;
 	}
 
@@ -203,7 +198,7 @@ public class EETTReqResParser {
 	private EESSParser createANewEESSParser() {
 		cargarDatosEnCache();
 		// Creamos el objeto con los datos solicitados.
-		return new EESSParser();
+		return new EESSParser(datosDeEjecucion);
 	}
 
 	/**
@@ -228,11 +223,9 @@ public class EETTReqResParser {
 		serviceFactory.forProvincia().findAllProvincias();     // provincias
 		serviceFactory.forMunicipio().findAllMunicipios();     // municipios
 
-		datoDeEjecucion.setTiempoCargaDatosInicialesCache(
-				System.currentTimeMillis() - tiempoCargaDatosInicialesCacheInicio);
 		loggerParse.info(
 				ETIQUETA_LOGGER + "CARGADOS los datos en CACHÉ. Tiempo empleado: {} ms.",
-				datoDeEjecucion.getTiempoCargaDatosInicialesCache());
+				System.currentTimeMillis() - tiempoCargaDatosInicialesCacheInicio);
 	}
 
 	/**
@@ -250,7 +243,8 @@ public class EETTReqResParser {
 
 		// Usamos el eessParser definido anteriormente para parsear cada EESS
 		try {
-			return eessParser.parseEESS(estacionDeServicioDTO, this.fechaDeParser);
+			return eessParser.parseEESS(estacionDeServicioDTO,
+										datosDeEjecucion.getFechaDeDatosProcesados());
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			loggerParse.error(ETIQUETA_LOGGER +
 									  "Error al parsear la estación de servicio (EESS) con código externo {} - Se ignora: {}",

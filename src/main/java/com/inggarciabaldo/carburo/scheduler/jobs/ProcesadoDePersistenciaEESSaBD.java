@@ -24,14 +24,14 @@ public class ProcesadoDePersistenciaEESSaBD {
 
 	// Servicio de persistencia para eess
 	private final EESSCrudService servicioEESS;
-	private final DatoDeEjecucion datoDeEjecucion;
+	private final DatosDeEjecucion datosDeEjecucion;
 	private final Collection<EstacionDeServicio> estacionDeServicioParseada;
 
 	public ProcesadoDePersistenciaEESSaBD(
 			Collection<EstacionDeServicio> estacionDeServicioParseada,
-			DatoDeEjecucion datoDeEjecucion) {
+			DatosDeEjecucion datosDeEjecucion) {
 		// Comprobaciones
-		if (datoDeEjecucion == null) throw new IllegalArgumentException(
+		if (datosDeEjecucion == null) throw new IllegalArgumentException(
 				"No se puede procesar la persistencia de eess ya que el objeto de datos de ejecución es nulo.");
 		if (estacionDeServicioParseada == null) throw new IllegalArgumentException(
 				"No se puede procesar la persistencia de eess ya que la colección introducida es NULA.");
@@ -42,7 +42,7 @@ public class ProcesadoDePersistenciaEESSaBD {
 		}
 
 		// Objeto de estadísticas.
-		this.datoDeEjecucion = datoDeEjecucion;
+		this.datosDeEjecucion = datosDeEjecucion;
 
 		// Ordenamos las estaciones por su extCode
 		this.estacionDeServicioParseada = estacionDeServicioParseada.stream()
@@ -54,12 +54,12 @@ public class ProcesadoDePersistenciaEESSaBD {
 
 
 	/**
-	 * Este metodo se encargará de comparar aquellas estaciones de servicio parseadas,
+	 * Comparará aquellas estaciones de servicio parseadas,
 	 * actualmente introducidas por parámetro con las ya existentes en la base de datos.
 	 * Si no existe la estación de servicio, se persistirá. Si ya existe, se comprobará si
 	 * alguno de sus datos ha cambiado y en caso afirmativo se actualizará.
 	 * <p>
-	 * A parte, comprobará los precios de cada estación de servicio y, si no existen en la base de datos, los persistirá. En caso de que existan, comprobará si han cambiado y los actualizará en caso afirmativo.
+	 * Aparte, comprobará los precios de cada estación de servicio y, si no existen en la base de datos, los persistirá. En caso de que existan, comprobará si han cambiado y los actualizará en caso afirmativo.
 	 * Hará lo correspondiente con la disponibilidad de cada estación de servicio.
 	 */
 	public void procesar() {
@@ -130,13 +130,13 @@ public class ProcesadoDePersistenciaEESSaBD {
 		coleccionEESSFueraDeBD     = particion.get(false).stream().sorted(byExtCode)
 				.toList();
 
-		datoDeEjecucion.setTotalEESSParseadasFueraDeBD(coleccionEESSFueraDeBD.size());
-		datoDeEjecucion.setTotalEESSParseadasEnBD(coleccionEESSPresentesEnBD.size());
+		datosDeEjecucion.setDecisionEESSNuevas(coleccionEESSFueraDeBD.size());
+		datosDeEjecucion.setDecisionEESSYaPresentes(coleccionEESSPresentesEnBD.size());
 
 		loggerCron.info(
 				"Separación de las EESS parseadas en función de si EXISTE en la BD: Sí - {} EESS; No - {} EESS.",
-				datoDeEjecucion.getTotalEESSParseadasEnBD(),
-				datoDeEjecucion.getTotalEESSParseadasFueraDeBD());
+				datosDeEjecucion.getDecisionEESSYaPresentes(),
+				datosDeEjecucion.getDecisionEESSNuevas());
 
 		if (!coleccionEESSPresentesEnBD.isEmpty()) {
 			//Asigna a cada eess de coleccionEESSEnBD el id que corresponde en BD.
@@ -238,7 +238,7 @@ public class ProcesadoDePersistenciaEESSaBD {
 		try {
 			long tiempoInicio = System.currentTimeMillis();
 			estacionDeServiciosEnBD = servicioEESS.findAllEESS();
-			datoDeEjecucion.setTiempoObtenerEESSBD(
+			datosDeEjecucion.setBdCargaInicialEESSTiempoMs(
 					System.currentTimeMillis() - tiempoInicio);
 		} catch (Exception e) {
 			loggerCron.error("Error al intentar obtener las EESS iniciales.{}",
@@ -246,7 +246,7 @@ public class ProcesadoDePersistenciaEESSaBD {
 			throw new IllegalStateException(
 					"Error al intentar obtener las EESS iniciales.", e);
 		}
-		datoDeEjecucion.setTotalEESSEnBDAlInicio(estacionDeServiciosEnBD.size());
+		datosDeEjecucion.setBdTotalEESSIniciales(estacionDeServiciosEnBD.size());
 		return estacionDeServiciosEnBD;
 	}
 
@@ -285,18 +285,18 @@ public class ProcesadoDePersistenciaEESSaBD {
 						return eessBD != null &&
 								requierenActualizacion(eessBD, eessParseada);
 					}).toList();
-			datoDeEjecucion.setTiempoProcesamientoEESSRequierenActualizacion(
+			datosDeEjecucion.setDecisionEESSActualizarTiempoMs(
 					System.currentTimeMillis() - tiempoInicio);
 		}
 
 		// Definir tiempo usado, monto total de salida y la salida
-		datoDeEjecucion.setTotalEESSParseadasRequierenActualizacion(
+		datosDeEjecucion.setDecisionEESSActualizar(
 				estacionesPendientesActualizacion.size());
 		loggerCron.info(
-				"PROCESADAS {} EESS de la BD (en función de las parseadas) susceptibles de actualización. Se concluye que {} requieren actualización. En {} ms. ",
-				datoDeEjecucion.getTotalEESSParseadasFueraDeBD(),
-				datoDeEjecucion.getTotalEESSParseadasRequierenActualizacion(),
-				datoDeEjecucion.getTiempoProcesamientoEESSRequierenActualizacion());
+				"PROCESADAS {} EESS (aquellas que parseamos y ya se encontraban presentes en la BD) susceptibles de ACTUALIZACIÓN. Se concluye que {} requieren actualización. En {} ms. ",
+				datosDeEjecucion.getDecisionEESSYaPresentes(),
+				datosDeEjecucion.getDecisionEESSActualizar(),
+				datosDeEjecucion.getDecisionEESSActualizarTiempoMs());
 		return estacionesPendientesActualizacion;
 	}
 
@@ -385,19 +385,19 @@ public class ProcesadoDePersistenciaEESSaBD {
 		// Insertamos todas las estaciones de servicio en bloque
 		{
 			long tiempoInicio = System.currentTimeMillis();
-			datoDeEjecucion.setTotalEESSPrecioYDisponibilidadFueraDeBDInsertadas(
+			datosDeEjecucion.setPersistenciaEESSInsertadas(
 					servicioEESS.addAllEESSandDisponCombusAndPrecioCombus(
 							estacionesAInsertar));
-			datoDeEjecucion.setTiempoPersistenciaEESSPrecioYDisponibilidadFueraDeBD(
+			datosDeEjecucion.setPersistenciaEESSInsertTiempoMs(
 					System.currentTimeMillis() - tiempoInicio);
 		}
 
 		// Definir el total de eess insertadas correctamente, y el tiempo usado
 		loggerCron.info(
 				"INSERTADAS correctamente {} EESS que no estaban en la BD de las {} planteadas en {} ms. ",
-				datoDeEjecucion.getTotalEESSPrecioYDisponibilidadFueraDeBDInsertadas(),
-				datoDeEjecucion.getTotalEESSParseadasFueraDeBD(),
-				datoDeEjecucion.getTiempoPersistenciaEESSPrecioYDisponibilidadFueraDeBD());
+				datosDeEjecucion.getPersistenciaEESSInsertadas(),
+				datosDeEjecucion.getDecisionEESSNuevas(),
+				datosDeEjecucion.getPersistenciaEESSInsertTiempoMs());
 	}
 
 	/**
@@ -421,17 +421,18 @@ public class ProcesadoDePersistenciaEESSaBD {
 
 		for (EstacionDeServicio eess : coleccionEESSaActualizar) {
 			servicioEESS.updateEESS(eess);
-			datoDeEjecucion.totalEESSActualizadas++;
+			datosDeEjecucion.setPersistenciaEESSActualizadas(
+					datosDeEjecucion.getPersistenciaEESSActualizadas() + 1);
 		}
-		datoDeEjecucion.setTiempoPersistenciaEESSActualizacion(
+		datosDeEjecucion.setPersistenciaEESSUpdateTiempoMs(
 				System.currentTimeMillis() - tiempoInicio);
 
 		// Definir el total de eess insertadas correctamente, y el tiempo usado
 		loggerCron.info(
 				"ACTUALIZADAS correctamente {} EESS de la BD de las {} planteadas en {} ms. ",
-				datoDeEjecucion.getTotalEESSParseadasRequierenActualizacion(),
-				datoDeEjecucion.getTotalEESSActualizadas(),
-				datoDeEjecucion.getTiempoPersistenciaEESSActualizacion());
+				datosDeEjecucion.getPersistenciaEESSActualizadas(),
+				datosDeEjecucion.getDecisionEESSActualizar(),
+				datosDeEjecucion.getPersistenciaEESSUpdateTiempoMs());
 	}
 
 	/**
@@ -498,16 +499,16 @@ public class ProcesadoDePersistenciaEESSaBD {
 						!combustiblesEnBD.contains(dto.getIdCombustible());
 			}).toList();
 		}
-		datoDeEjecucion.setTiempoProcesamientoDisponibilidadDeCombustiblesAInsertar(
+		datosDeEjecucion.setDecisionDisponibilidadInsertarTiempoMs(
 				System.currentTimeMillis() - tiempoInicio);
 
-		datoDeEjecucion.setTotalProcesamientoDisponibilidadAInsertar(
+		datosDeEjecucion.setDecisionDisponibilidadesInsertar(
 				disponibilidadDeCombutible.size());
 		loggerCron.info(
-				"PROCESADOS {} objetos Combustible-Disponible susceptibles de necesitar ser INSERTAR en las EESS que ya se encontraban en BD ({}). Se concluye que {} objetos Combustible-Disponible lo requieren. En {} ms. ",
-				totalDisponibilidad, datoDeEjecucion.getTotalEESSParseadasFueraDeBD(),
-				datoDeEjecucion.getTotalProcesamientoDisponibilidadAInsertar(),
-				datoDeEjecucion.getTiempoProcesamientoDisponibilidadDeCombustiblesAInsertar());
+				"PROCESADOS {} objetos Combustible-Disponible susceptibles de necesitar ser INSERTADOS en las EESS que ya se encontraban en BD ({}). Se concluye que {} objetos Combustible-Disponible lo requieren. En {} ms. ",
+				totalDisponibilidad, datosDeEjecucion.getDecisionEESSYaPresentes(),
+				datosDeEjecucion.getDecisionDisponibilidadesInsertar(),
+				datosDeEjecucion.getDecisionDisponibilidadInsertarTiempoMs());
 
 		return disponibilidadDeCombutible;
 	}
@@ -531,18 +532,18 @@ public class ProcesadoDePersistenciaEESSaBD {
 		// Insertamos todos los estaciones de servicio en bloque
 		{
 			long tiempoInicio = System.currentTimeMillis();
-			datoDeEjecucion.setTotalPersistenciaDisponibilidad(
+			datosDeEjecucion.setPersistenciaDisponibilidadesInsertadas(
 					servicioEESS.addAllCombustiblesDisponibles(collectionDisponibilidad));
-			datoDeEjecucion.setTiempoPersistenciaInsertarDisponibilidadDeCombustibles(
+			datosDeEjecucion.setPersistenciaDisponibilidadesInsertTiempoMs(
 					System.currentTimeMillis() - tiempoInicio);
 		}
 
 		// Definir el total de objetos disponibilidad-combustible insertados correctamente, y el tiempo usado
 		loggerCron.info(
 				"INSERTADAS correctamente {} objetos Combustible-Disponible que no estaban en la BD de los {} planteadas en {} ms.",
-				datoDeEjecucion.getTotalPersistenciaDisponibilidad(),
+				datosDeEjecucion.getPersistenciaDisponibilidadesInsertadas(),
 				collectionDisponibilidad.size(),
-				datoDeEjecucion.getTiempoPersistenciaInsertarDisponibilidadDeCombustibles());
+				datosDeEjecucion.getPersistenciaDisponibilidadesInsertTiempoMs());
 	}
 
 	private Collection<PrecioCombustible> getPrecioCombustibleAInsertar(
@@ -558,7 +559,7 @@ public class ProcesadoDePersistenciaEESSaBD {
 			return List.of();
 		}
 
-		final LocalDate fecha = datoDeEjecucion.getFechaDeParser();
+		final LocalDate fecha = datosDeEjecucion.getFechaDeDatosProcesados();
 		int totalPreciosPosiblesAInsertar;
 		Collection<PrecioCombustible> precioCombustiblesAInsertar;
 
@@ -602,17 +603,17 @@ public class ProcesadoDePersistenciaEESSaBD {
 					}).toList();
 		}
 
-		datoDeEjecucion.setTiempoProcesamientoPreciosDeCombustiblesAInsertar(
+		datosDeEjecucion.setDecisionPreciosInsertarTiempoMs(
 				System.currentTimeMillis() - tiempoInicio);
 
-		datoDeEjecucion.setTotalProcesamientoPreciosAInsertar(
+		datosDeEjecucion.setDecisionPreciosInsertar(
 				precioCombustiblesAInsertar.size());
 		loggerCron.info(
 				"PROCESADOS {} objetos Precio-Combustible susceptibles de necesitar ser INSERTAR en las EESS que ya se encontraban en BD ({}). Se concluye que {} objetos Precio-Combustible lo requieren. En {} ms. ",
 				totalPreciosPosiblesAInsertar,
-				datoDeEjecucion.getTotalEESSParseadasFueraDeBD(),
-				datoDeEjecucion.getTotalProcesamientoPreciosAInsertar(),
-				datoDeEjecucion.getTiempoProcesamientoDisponibilidadDeCombustiblesAInsertar());
+				datosDeEjecucion.getDecisionEESSYaPresentes(),
+				datosDeEjecucion.getDecisionPreciosInsertar(),
+				datosDeEjecucion.getDecisionPreciosInsertarTiempoMs());
 
 		return precioCombustiblesAInsertar;
 	}
@@ -636,18 +637,18 @@ public class ProcesadoDePersistenciaEESSaBD {
 		// Insertamos todos los precios en bloque
 		{
 			long tiempoInicio = System.currentTimeMillis();
-			datoDeEjecucion.setTotalPersistenciaInsertarPrecios(
+			datosDeEjecucion.setPersistenciaPreciosInsertados(
 					servicioEESS.addAllPrecioCombustibles(preciosAInsertar));
-			datoDeEjecucion.setTiempoProcesamientoPreciosDeCombustiblesAInsertar(
+			datosDeEjecucion.setPersistenciaPreciosInsertTiempoMs(
 					System.currentTimeMillis() - tiempoInicio);
 		}
 
 		// Definir el total de precios insertados correctamente, y el tiempo usado
 		loggerCron.info(
 				"INSERTADAS correctamente {} objetos Precio-Combustible que no estaban en la BD de los {} planteadas en {} ms.",
-				datoDeEjecucion.getTotalPersistenciaInsertarPrecios(),
+				datosDeEjecucion.getPersistenciaPreciosInsertados(),
 				preciosAInsertar.size(),
-				datoDeEjecucion.getTiempoProcesamientoPreciosDeCombustiblesAInsertar());
+				datosDeEjecucion.getPersistenciaPreciosInsertTiempoMs());
 	}
 
 	private Collection<PrecioCombustible> getPrecioCombustibleAActualizar(
@@ -663,7 +664,7 @@ public class ProcesadoDePersistenciaEESSaBD {
 			return List.of();
 		}
 
-		final LocalDate fecha = datoDeEjecucion.getFechaDeParser();
+		final LocalDate fecha = datosDeEjecucion.getFechaDeDatosProcesados();
 
 		// Medición del tiempo de procesamiento
 		long tiempoInicio = System.currentTimeMillis();
@@ -708,16 +709,16 @@ public class ProcesadoDePersistenciaEESSaBD {
 					}).toList();
 		}
 
-		datoDeEjecucion.setTiempoProcesamientoPreciosDeCombustiblesAActualizar(
+		datosDeEjecucion.setDecisionPreciosActualizarTiempoMs(
 				System.currentTimeMillis() - tiempoInicio);
 
-		datoDeEjecucion.setTotalProcesamientoPreciosAInsertar(
+		datosDeEjecucion.setDecisionPreciosActualizar(
 				precioCombustiblesAActualizar.size());
 		loggerCron.info(
 				"PROCESADOS {} objetos Precio-Combustible susceptibles de necesitar ser ACTUALIZADOS en las EESS que ya se encontraban en BD ({}). Se concluye que {} objetos Precio-Combustible lo requieren. En {} ms. ",
-				totalPreciosAActualizar, datoDeEjecucion.getTotalEESSParseadasFueraDeBD(),
-				datoDeEjecucion.getTotalProcesamientoPreciosAActualizar(),
-				datoDeEjecucion.getTiempoProcesamientoPreciosDeCombustiblesAActualizar());
+				totalPreciosAActualizar, datosDeEjecucion.getDecisionEESSYaPresentes(),
+				datosDeEjecucion.getDecisionPreciosActualizar(),
+				datosDeEjecucion.getDecisionPreciosActualizarTiempoMs());
 
 		return precioCombustiblesAActualizar;
 	}
@@ -741,17 +742,17 @@ public class ProcesadoDePersistenciaEESSaBD {
 		// Actualizamos todos los precios en bloque
 		{
 			long tiempoInicio = System.currentTimeMillis();
-			datoDeEjecucion.setTotalPersistenciaActualizarPrecios(
+			datosDeEjecucion.setPersistenciaPreciosActualizados(
 					servicioEESS.updateAllPrecioCombustibles(preciosAActualizar));
-			datoDeEjecucion.setTiempoPersistenciaActualizarPreciosDeCombustibles(
+			datosDeEjecucion.setPersistenciaPreciosUpdateTiempoMs(
 					System.currentTimeMillis() - tiempoInicio);
 		}
 
 		// Definir el total de precios actualizados correctamente, y el tiempo usado
 		loggerCron.info(
 				"ACTUALIZADOS correctamente {} objetos Precio-Combustible que no estaban en la BD de los {} planteadas en {} ms.",
-				datoDeEjecucion.getTotalPersistenciaActualizarPrecios(),
+				datosDeEjecucion.getPersistenciaPreciosActualizados(),
 				preciosAActualizar.size(),
-				datoDeEjecucion.getTiempoPersistenciaActualizarPreciosDeCombustibles());
+				datosDeEjecucion.getPersistenciaPreciosUpdateTiempoMs());
 	}
 }

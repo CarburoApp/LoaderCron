@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; background-color:#f4f6f8; margin:0; padding:0; color:#333; }
+        .container { max-width:900px; margin:20px auto; padding:20px; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+        h1 { text-align:center; color:#b22222; }
+        .section-title { background-color:#b22222; color:#fff; padding:8px 12px; margin-top:20px; border-radius:4px 4px 0 0; font-size:16px; }
+        table { width:100%; border-collapse: collapse; margin-bottom:20px; }
+        th, td { border:1px solid #ddd; padding:8px; text-align:center; font-size:14px; }
+        th { background:#f2f2f2; }
+        tr:nth-child(even) { background:#fafafa; }
+        .error-box { border:2px solid #b22222; background:#ffe6e6; padding:15px; border-radius:5px; margin-bottom:20px; white-space:pre-wrap; font-family:monospace; }
+        ol { padding-left:20px; margin:0; }
+        li { margin-bottom:4px; }
+        .warning { color: orange; font-weight:bold; }
+        .error { color:red; font-weight:bold; }
+        @media only screen and (max-width:600px){ th, td{ font-size:12px; padding:6px; } .section-title{ font-size:14px; padding:6px; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Reporte de Ejecución del CRON - ERROR</h1>
+
+    <div class="section-title">Resumen de Ejecución</div>
+    <table>
+        <tr><th>Fecha Inicio</th><th>Fecha Fin</th><th>Duración</th></tr>
+        <tr>
+            <td>{{fechaInicio}}</td>
+            <td>{{fechaFin}}</td>
+            <td>{{duracion}}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Detalle de la Excepción</div>
+    <div class="error-box">
+        Tipo: {{tipoExcepcion}}
+        Mensaje: {{mensajeExcepcion}}
+    </div>
+
+    <div class="section-title">Warnings Detectados</div>
+    <ol>
+        {{warningsDetectados}}
+    </ol>
+
+    <div class="section-title">Errores Detectados</div>
+    <ol>
+        {{erroresDetectados}}
+    </ol>
+
+    <div class="section-title">Acción Recomendada</div>
+    <div style="padding:10px; background:#fff3cd; border-left:5px solid #ffeeba; border-radius:4px;">
+        Revise los archivos adjuntos (log y JSON) para identificar la causa del error.<br>
+        Valide si es necesario reejecutar el proceso o aplicar alguna corrección.
+    </div>
+</div>
+</body>
+</html>

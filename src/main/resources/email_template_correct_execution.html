@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es-ES">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Ejecución del CRON</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+            color: #2F4F4F;
+        }
+        .section-title {
+            background-color: #4CAF50;
+            color: #fff;
+            padding: 8px 12px;
+            margin-top: 20px;
+            border-radius: 4px 4px 0 0;
+            font-size: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            font-size: 14px;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .warning { color: orange; font-weight: bold; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 4px; }
+        @media only screen and (max-width: 600px) {
+            th, td { font-size: 12px; padding: 6px; }
+            .section-title { font-size: 14px; padding: 6px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Reporte de Ejecución del CRON</h1>
+    <h2>Resumen del Job</h2>
+
+    <div class="section-title">Fechas de Ejecución</div>
+    <table>
+        <tr>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Duración Total</th>
+            <th>Fecha Datos Procesados</th>
+        </tr>
+        <tr>
+            <td>{{fechaInicioEjecucion}}</td>
+            <td>{{fechaFinEjecucion}}</td>
+            <td>{{tiempoTotalCronMs}}</td>
+            <td>{{fechaDeDatosProcesados}}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">API Externa</div>
+    <table>
+        <tr>
+            <th>Intentos</th>
+            <th>Total EESS JSON</th>
+            <th>Respuesta válida</th>
+            <th>Tiempo HTTP</th>
+        </tr>
+        <tr>
+            <td>{{apiHttpIntentosRealizados}}</td>
+            <td>{{apiTotalEESSRecibidasJson}}</td>
+            <td class="{{apiRespuestaValida ? 'success' : 'error'}}">{{apiRespuestaValida}}</td>
+            <td>{{tiempoTotalHttpRequestMs}}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Parseo JSON → DTO</div>
+    <table>
+        <tr>
+            <th>Tiempo Parseo</th>
+            <th>Total EESS DTO</th>
+        </tr>
+        <tr>
+            <td>{{parseoJsonADtoTiempoMs}}</td>
+            <td>{{parseoTotalEESSEnDto}}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Parseo DTO → Entidades</div>
+    <table>
+        <tr>
+            <th>Total EESS</th>
+            <th>Correctas</th>
+            <th>Erróneas</th>
+            <th>Precios correctos</th>
+            <th>Tiempo Parseo</th>
+        </tr>
+        <tr>
+            <td>{{parseoEESSTotal}}</td>
+            <td>{{parseoEESSCorrectas}}</td>
+            <td>{{parseoEESSErroneas}}</td>
+            <td>{{parseoPreciosCorrectos}}</td>
+            <td>{{tiempoTotalParseoMs}}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Carga Inicial BD</div>
+    <table>
+        <tr>
+            <th>Tiempo carga EESS</th>
+            <th>Total EESS en BD al inicio</th>
+        </tr>
+        <tr>
+            <td>{{bdCargaInicialEESSTiempoMs}}</td>
+            <td>{{bdTotalEESSIniciales}}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Decisiones y Diferencias</div>
+    <table>
+        <tr>
+            <th>Tiempo Actualización EESS</th>
+            <th>Tiempo Insertar Disponibilidades</th>
+            <th>Tiempo Insertar Precios</th>
+            <th>Tiempo Actualizar Precios</th>
+            <th>EESS Nuevas</th>
+            <th>EESS Ya Presentes</th>
+            <th>EESS a Actualizar</th>
+            <th>Precios a Insertar</th>
+            <th>Precios a Actualizar</th>
+            <th>Disponibilidades a Insertar</th>
+        </tr>
+        <tr>
+            <td>{{decisionEESSActualizarTiempoMs}}</td>
+            <td>{{decisionDisponibilidadInsertarTiempoMs}}</td>
+            <td>{{decisionPreciosInsertarTiempoMs}}</td>
+            <td>{{decisionPreciosActualizarTiempoMs}}</td>
+            <td>{{decisionEESSNuevas}}</td>
+            <td>{{decisionEESSYaPresentes}}</td>
+            <td>{{decisionEESSActualizar}}</td>
+            <td>{{decisionPreciosInsertar}}</td>
+            <td>{{decisionPreciosActualizar}}</td>
+            <td>{{decisionDisponibilidadesInsertar}}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Persistencia EESS</div>
+    <table>
+        <tr>
+            <th>Tiempo Inserción</th>
+            <th>EESS Insertadas</th>
+            <th>Tiempo Actualización</th>
+            <th>EESS Actualizadas</th>
+        </tr>
+        <tr>
+            <td>{{persistenciaEESSInsertTiempoMs}}</td>
+            <td>{{persistenciaEESSInsertadas}}</td>
+            <td>{{persistenciaEESSUpdateTiempoMs}}</td>
+            <td>{{persistenciaEESSActualizadas}}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Persistencia Precios</div>
+    <table>
+        <tr>
+            <th>Tiempo Inserción</th>
+            <th>Precios Insertados</th>
+            <th>Tiempo Actualización</th>
+            <th>Precios Actualizados</th>
+        </tr>
+        <tr>
+            <td>{{persistenciaPreciosInsertTiempoMs}}</td>
+            <td>{{persistenciaPreciosInsertados}}</td>
+            <td>{{persistenciaPreciosUpdateTiempoMs}}</td>
+            <td>{{persistenciaPreciosActualizados}}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Persistencia Disponibilidades</div>
+    <table>
+        <tr>
+            <th>Tiempo Inserción</th>
+            <th>Disponibilidades Insertadas</th>
+        </tr>
+        <tr>
+            <td>{{persistenciaDisponibilidadesInsertTiempoMs}}</td>
+            <td>{{persistenciaDisponibilidadesInsertadas}}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">Warnings</div>
+    <ol>
+        {{warningsDetectados}}
+    </ol>
+
+    <div class="section-title">Errores</div>
+    <ol>
+        {{erroresDetectados}}
+    </ol>
+
+
+</div>
+</body>
+</html>

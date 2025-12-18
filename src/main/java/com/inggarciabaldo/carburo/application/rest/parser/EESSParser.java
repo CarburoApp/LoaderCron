@@ -8,6 +8,7 @@ import com.inggarciabaldo.carburo.application.model.enums.Venta;
 import com.inggarciabaldo.carburo.application.rest.dto.ESParserDTO;
 import com.inggarciabaldo.carburo.application.rest.dto.PreciosCombustibleParserDTO;
 import com.inggarciabaldo.carburo.application.service.ServiceFactory;
+import com.inggarciabaldo.carburo.scheduler.jobs.DatosDeEjecucion;
 import com.inggarciabaldo.carburo.util.log.Loggers;
 import org.slf4j.Logger;
 
@@ -24,6 +25,7 @@ public class EESSParser {
 
 	// Logger para operaciones de parseo
 	private static final Logger parseLog = Loggers.PARSE;
+	private final DatosDeEjecucion datosDeEjecucion;
 
 	private final PreciosCombustibleParser preciosCombustibleParser;
 
@@ -40,8 +42,10 @@ public class EESSParser {
 	 *<p>
 	 * Se recomienda encarecidamente usar la caché para optimizar el rendimiento.
 	 */
-	public EESSParser() {
-
+	public EESSParser(DatosDeEjecucion datos) {
+		if (datos == null) throw new IllegalArgumentException(
+				"El objeto datos de ejecución no pueden ser nulos.");
+		this.datosDeEjecucion = datos;
 		ServiceFactory serviceFactory = Factorias.service;
 
 		// Crear los mapas de referencia para el parser
@@ -120,6 +124,8 @@ public class EESSParser {
 		// Parseo los precios de combustibles
 		prComb = preciosCombustibleParser.parsePrecioCombustibleEESS(item, eess, fecha);
 		if (prComb == null || prComb.isEmpty()) return;
+		datosDeEjecucion.setParseoPreciosCorrectos(
+				datosDeEjecucion.getParseoPreciosCorrectos() + prComb.size());
 
 		// Acoplo los precios a la EESS
 		for (PrecioCombustible objPrecio : prComb)
