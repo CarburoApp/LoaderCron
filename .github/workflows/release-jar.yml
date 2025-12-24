@@ -23,11 +23,11 @@ jobs:
 
       - name: Rename JAR
         run: |
-          mv target/*.jar target/LoaderCron.jar
+          mv target/*-shaded.jar LoaderCron.jar
 
       - name: Upload JAR to release
         uses: softprops/action-gh-release@v2
         with:
-          files: target/LoaderCron.jar
+          files: LoaderCron.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
