@@ -22,8 +22,7 @@ jobs:
         run: mvn clean package -DskipTests
 
       - name: Rename JAR
-        run: |
-          mv target/*-shaded.jar LoaderCron.jar
+        run: mv target/*-shaded.jar LoaderCron.jar
 
       - name: Upload JAR to release
         uses: softprops/action-gh-release@v2
