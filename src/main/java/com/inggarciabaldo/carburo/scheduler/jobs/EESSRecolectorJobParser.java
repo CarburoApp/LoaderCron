@@ -217,11 +217,16 @@ public class EESSRecolectorJobParser implements Job {
 		// Registro del resumen en el log
 		loggerCron.info(datosEjecucion.getInformeEjecucion());
 
-		boolean enviado = enviarCorreoEjecucionCorrecta();
-
+		if (datosEjecucion.getWarningsDetectados().isEmpty() &&
+				datosEjecucion.getErroresDetectados().isEmpty()) {
+			loggerCron.info(LOG_CRON_END, datosEjecucion.formatoHora(
+					datosEjecucion.getFechaFinEjecucion()), "No se requiere");
+			return;
+		}
 		loggerCron.info(LOG_CRON_END,
 						datosEjecucion.formatoHora(datosEjecucion.getFechaFinEjecucion()),
-						enviado ? "Sí" : "No");
+						enviarCorreoEjecucionCorrecta() ? "Sí" : "No");
+
 	}
 
 	private boolean enviarCorreoEjecucionCorrecta() {

@@ -37,8 +37,7 @@ public class ProcesadoDePersistenciaEESSaBD {
 				"No se puede procesar la persistencia de eess ya que la colección introducida es NULA.");
 
 		if (estacionDeServicioParseada.isEmpty()) {
-			loggerCron.warn("COLECCIÓN de EESS recibida para persistir está VACÍA.");
-
+			loggerCron.info("COLECCIÓN de EESS recibida para persistir está VACÍA.");
 		}
 
 		// Objeto de estadísticas.
@@ -153,8 +152,13 @@ public class ProcesadoDePersistenciaEESSaBD {
 			coleccionEESSaActualizar = doComprobarEESSaActualizar(
 					coleccionEESSPresentesEnBD, eessEnBDPorExtCode);
 
-			// 5. Actualizamos aquellas estaciones que lo requiran
-			doUpdateEESS(coleccionEESSaActualizar);
+			if(!coleccionEESSaActualizar.isEmpty()){
+				// 5. Actualizamos aquellas estaciones que lo requiran
+				doUpdateEESS(coleccionEESSaActualizar);
+			} else {
+				loggerCron.info(
+						"COLECCIÓN de EESS a actualizar se encuentra VACÍA. No se ha actualizado ninguna.");
+			}
 		} else loggerCron.info(
 				"COLECCIÓN de EESS parseadas que ya se encontraría en BD está VACÍA. No se requiere actualización de ninguna de estas EESS.");
 

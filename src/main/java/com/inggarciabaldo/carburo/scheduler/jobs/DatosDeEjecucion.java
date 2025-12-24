@@ -121,10 +121,10 @@ public class DatosDeEjecucion {
 
 
 	// Guarda la lista completa de errores detectados durante la ejecución
-	private List<String> erroresDetectados = new ArrayList<>();
+	private final List<String> erroresDetectados = new ArrayList<>();
 
 	// Guarda la lista completa de avisos no críticos detectados
-	private List<String> warningsDetectados = new ArrayList<>();
+	private final List<String> warningsDetectados = new ArrayList<>();
 
 	protected DatosDeEjecucion() {}
 

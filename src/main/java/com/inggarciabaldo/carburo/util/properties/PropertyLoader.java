@@ -125,8 +125,8 @@ public final class PropertyLoader {
 						props.load(reader);
 					}
 				}
-				Loggers.GENERAL.info("PROPIEDADES correctamente CARGADAS desde disco. Ubicación: archivos de respaldo en objeto compilado.");
-				Loggers.GENERAL.warn("La ubicación de los archivos de properties es la de respaldo en el objeto compilado. SE TOMARAN LAS VARIABLES POR DEFECTO. Cualquier modificación en /config no se tendrá en cuenta.");
+				Loggers.GENERAL.info(
+						"PROPIEDADES correctamente CARGADAS. Ubicación: archivos de respaldo en objeto compilado. SE TOMARAN LAS VARIABLES POR DEFECTO. Cualquier modificación en /config no se tendrá en cuenta.");
 			}
 
 			// --- Resolución de variables de entorno solo para application.properties ---
