@@ -6,9 +6,9 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.inggarciabaldo.carburo</groupId>
+    <groupId>app.carburo.loader</groupId>
     <artifactId>LoaderCron</artifactId>
-    <version>1.0.1.</version>
+    <version>1.0.2</version>
     <packaging>jar</packaging>
 
     <name>LoaderCron</name>
@@ -19,7 +19,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>21</maven.compiler.release>
-        <main.class>com.inggarciabaldo.carburo.app.CronLauncher</main.class>
+        <main.class>app.carburo.loader.app.CronLauncher</main.class>
 
         <config.dir>${project.basedir}/Config</config.dir>
     </properties>
@@ -175,7 +175,6 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
 </project>
