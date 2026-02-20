@@ -10,7 +10,12 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
+import java.security.cert.X509Certificate;
 import java.time.Duration;
 
 /**
@@ -77,13 +82,36 @@ public class HttpClient {
 																	String.valueOf(
 																			DEFAULT_TIMEOUT_SEGUNDOS)));
 
-		// Creamos el cliente OkHttp con los tiempos de espera configurados
-		this.clienteHttp = new OkHttpClient.Builder().connectTimeout(
-						Duration.ofSeconds(tiempoEsperaSegundos))
-				.readTimeout(Duration.ofSeconds(tiempoEsperaSegundos)).build();
+		try {
+			// Trust manager que NO valida nada
+			final TrustManager[] trustAllCerts = new TrustManager[]{
+					new X509TrustManager() {
+						public void checkClientTrusted(X509Certificate[] chain, String authType) {}
+						public void checkServerTrusted(X509Certificate[] chain, String authType) {}
+						public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[]{}; }
+					}
+			};
 
-		logger.info("Cliente HTTP inicializado con timeout de {} segundos",
+			// Crear SSLContext que confía en todos los certificados
+			final SSLContext sslContext = SSLContext.getInstance("TLS");
+			sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+
+			final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+
+			this.clienteHttp = new OkHttpClient.Builder()
+					.sslSocketFactory(sslSocketFactory, (X509TrustManager) trustAllCerts[0])
+					.hostnameVerifier((hostname, session) -> true)
+					.connectTimeout(Duration.ofSeconds(tiempoEsperaSegundos))
+					.readTimeout(Duration.ofSeconds(tiempoEsperaSegundos))
+					.build();
+
+			logger.info("SSL desactivado - confiando en TODOS los certificados");
+			logger.info("Cliente HTTP inicializado con timeout de {} segundos",
 					tiempoEsperaSegundos);
+
+		} catch (Exception e) {
+			throw new RuntimeException("Error configurando SSL inseguro", e);
+		}
 	}
 
 	// ---------------------------------------------------------------------------------------------
