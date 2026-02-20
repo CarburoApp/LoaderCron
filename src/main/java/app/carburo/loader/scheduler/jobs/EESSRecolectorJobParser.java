@@ -1,11 +1,5 @@
 package app.carburo.loader.scheduler.jobs;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.FileAppender;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
 import app.carburo.loader.application.model.EstacionDeServicio;
 import app.carburo.loader.application.rest.GasStationHttpRequest;
 import app.carburo.loader.application.rest.dto.EETTReqResParserDTO;
@@ -19,6 +13,12 @@ import app.carburo.loader.util.email.strategies.CorrectJobExecutionConstructStra
 import app.carburo.loader.util.email.strategies.FailedJobExecutionConstructStrategy;
 import app.carburo.loader.util.log.Loggers;
 import app.carburo.loader.util.properties.PropertyLoader;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.FileAppender;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import org.json.JSONObject;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -172,9 +172,11 @@ public class EESSRecolectorJobParser implements Job {
 		if (!Jdbc.testConnection()) throw new IOException(LOG_DB_CONNECTION_ERROR);
 	}
 
-	private JSONObject obtenerDatosDesdeAPI() {
+	private JSONObject obtenerDatosDesdeAPI() throws IOException {
 		try {
 			return doAPIReqAndIsRespOK();
+		} catch (IOException e) {
+			throw e;
 		} catch (Exception e) {
 			throw new IllegalStateException(LOG_API_INVALID_RESPONSE, e);
 		}
@@ -296,7 +298,7 @@ public class EESSRecolectorJobParser implements Job {
 	 * @return JSONObject con la respuesta de la API
 	 * @throws IllegalStateException Si no se obtiene una respuesta válida tras todos los intentos
 	 */
-	private JSONObject doAPIReqAndIsRespOK() throws IllegalStateException {
+	private JSONObject doAPIReqAndIsRespOK() throws IllegalStateException, IOException {
 		// Leemos la configuración desde las properties (como String) y convertimos a tipos correctos
 		PropertyLoader loader = PropertyLoader.getInstance();
 		int maxIntentos = Integer.parseInt(
@@ -345,8 +347,7 @@ public class EESSRecolectorJobParser implements Job {
 				throw e;
 
 			} catch (Exception e) {
-				loggerCron.error(
-										 "ERROR al REALIZAR la PETICIÓN HTTP a la API en el intento número {}: {}",
+				loggerCron.error("ERROR al REALIZAR la PETICIÓN HTTP a la API en el intento número {}: {}",
 								 nIntento, e.getMessage(), e);
 
 				// Si no hemos alcanzado el máximo de reintentos, dormimos antes de reintentar
@@ -366,8 +367,7 @@ public class EESSRecolectorJobParser implements Job {
 			}
 		}
 		// Si ya superamos los reintentos, lanzamos excepción final
-		throw new IllegalStateException(
-												"NO se pudo obtener una RESPUESTA válida de la API tras " +
+		throw new IOException("NO se pudo obtener una RESPUESTA válida de la API tras " +
 												maxIntentos + " intentos.");
 	}
 
