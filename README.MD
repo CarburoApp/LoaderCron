@@ -86,6 +86,21 @@ variables de entorno:
 > - Nunca incluir la contraseña (`ENV_MAIL_PASSWORD`) directamente en el repositorio.
 > - Defínela como variable de entorno en el servidor:
 
+### 3️⃣ Configuración de certificados SSL (opcional)
+
+En algunos entornos, las llamadas HTTPS a la API del MITMA pueden fallar debido a que Java no confía en el certificado del servidor. 
+Para evitar errores como `Connection reset` o problemas de handshake SSL, puedes configurar un certificado **Root CA** confiable manualmente.
+
+---
+
+#### 📌 ¿Qué hay que hacer?
+
+1. Exportar el certificado Root CA del MITMA (por ejemplo `mitma-root.cer`).
+    - Este certificado se puede obtener desde el navegador o con `openssl`/PowerShell.
+    - Debe ser la **CA raíz**, no el certificado del endpoint, para que no caduque cada año.
+
+2. Colocar el archivo **mitma-root.cer** en la raíz del proyecto.
+
 ---
 
 ## 🔄 Funcionamiento general

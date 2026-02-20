@@ -11,11 +11,16 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
-import java.security.cert.X509Certificate;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
 import java.time.Duration;
 
 /**
@@ -58,6 +63,12 @@ public class HttpClient {
 	 */
 	private static final String TIPO_JSON = "application/json";
 
+	// Datos del certificado ssl
+	private static final String PROP_CERT_ENABLED = "ssl.cert.enabled";
+	private static final String PROP_CERT_FILE = "ssl.cert.file";
+	private static final String PROP_CERT_TYPE = "ssl.cert.type";
+	private static final String DEFAULT_CERT_TYPE = "X.509";
+
 	// ---------------------------------------------------------------------------------------------
 	// Atributos
 	// ---------------------------------------------------------------------------------------------
@@ -81,37 +92,50 @@ public class HttpClient {
 																	PROP_TIMEOUT_SEGUNDOS,
 																	String.valueOf(
 																			DEFAULT_TIMEOUT_SEGUNDOS)));
+		boolean sslEnabled = Boolean.parseBoolean(
+				PropertyLoader.getInstance()
+						.getApplicationProperty(PROP_CERT_ENABLED, "false")
+		);
+		OkHttpClient.Builder builder = new OkHttpClient.Builder()
+				.connectTimeout(Duration.ofSeconds(tiempoEsperaSegundos))
+				.readTimeout(Duration.ofSeconds(tiempoEsperaSegundos));
 
-		try {
-			// Trust manager que NO valida nada
-			final TrustManager[] trustAllCerts = new TrustManager[]{
-					new X509TrustManager() {
-						public void checkClientTrusted(X509Certificate[] chain, String authType) {}
-						public void checkServerTrusted(X509Certificate[] chain, String authType) {}
-						public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[]{}; }
-					}
-			};
+		if (sslEnabled) {
+			String certFileName = PropertyLoader.getInstance()
+					.getApplicationProperty(PROP_CERT_FILE);
+			String certType = PropertyLoader.getInstance()
+					.getApplicationProperty(PROP_CERT_TYPE, DEFAULT_CERT_TYPE);
 
-			// Crear SSLContext que confía en todos los certificados
-			final SSLContext sslContext = SSLContext.getInstance("TLS");
-			sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+			Path certPath = Paths.get(System.getProperty("user.dir"), certFileName);
 
-			final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+			if (!Files.exists(certPath))
+				throw new RuntimeException("No se encontró el certificado en: " + certPath);
+			try (InputStream is = Files.newInputStream(certPath)) {
+				CertificateFactory cf = CertificateFactory.getInstance(certType);
+				Certificate cert = cf.generateCertificate(is);
 
-			this.clienteHttp = new OkHttpClient.Builder()
-					.sslSocketFactory(sslSocketFactory, (X509TrustManager) trustAllCerts[0])
-					.hostnameVerifier((hostname, session) -> true)
-					.connectTimeout(Duration.ofSeconds(tiempoEsperaSegundos))
-					.readTimeout(Duration.ofSeconds(tiempoEsperaSegundos))
-					.build();
+				KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+				keyStore.load(null, null);
+				keyStore.setCertificateEntry("mitma-cert", cert);
 
-			logger.info("SSL desactivado - confiando en TODOS los certificados");
-			logger.info("Cliente HTTP inicializado con timeout de {} segundos",
-					tiempoEsperaSegundos);
+				TrustManagerFactory tmf = TrustManagerFactory.getInstance(
+						TrustManagerFactory.getDefaultAlgorithm());
+				tmf.init(keyStore);
 
-		} catch (Exception e) {
-			throw new RuntimeException("Error configurando SSL inseguro", e);
+				SSLContext sslContext = SSLContext.getInstance("TLS");
+				sslContext.init(null, tmf.getTrustManagers(), null);
+
+				builder.sslSocketFactory(
+						sslContext.getSocketFactory(),
+						(X509TrustManager) tmf.getTrustManagers()[0]
+				);
+
+				logger.info("SSL configurado usando certificado externo: {}", certPath);
+			} catch (Exception e) {
+				throw new RuntimeException("Error configurando SSL con certificado externo", e);
+			}
 		}
+		this.clienteHttp = builder.build();
 	}
 
 	// ---------------------------------------------------------------------------------------------
