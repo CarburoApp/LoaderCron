@@ -190,6 +190,8 @@ public class OwnHttpClient {
 						 e.getMessage());
 			throw e;
 		} catch (InterruptedException e) {
+			// Restauramos el estado de interrupción
+			Thread.currentThread().interrupt();
 			logger.error("Error de interrupción en la ejecución de la petición petición GET a {}: {}", urlString,
 					e.getMessage());
 			throw new IOException(e);
