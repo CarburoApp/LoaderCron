@@ -2,19 +2,18 @@ package app.carburo.loader.util.network;
 
 import app.carburo.loader.util.log.Loggers;
 import app.carburo.loader.util.properties.PropertyLoader;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,18 +23,14 @@ import java.security.cert.CertificateFactory;
 import java.time.Duration;
 
 /**
- * Clase HttpClient
+ * Clase OwnHttpClient
  * ----------------
- * Cliente HTTP basado en OkHttp para realizar peticiones GET y obtener respuestas JSON.
- *
- * <p>Esta implementación sustituye el uso de {@link java.net.HttpURLConnection},
- * aprovechando las ventajas de OkHttp: soporte para HTTP/2, mejor gestión de errores,
- * conexiones persistentes y mayor eficiencia.</p>
+ * Cliente HTTP basado en {@link HttpClient} para realizar peticiones GET y obtener respuestas JSON.
  *
  * <p>Se utiliza en la aplicación para realizar llamadas a servicios REST externos
  * (por ejemplo, los endpoints del Ministerio para la Transición Ecológica).</p>
  */
-public class HttpClient {
+public class OwnHttpClient {
 
 	private static final Logger logger = Loggers.GENERAL;
 
@@ -76,16 +71,16 @@ public class HttpClient {
 	/**
 	 * Cliente HTTP reutilizable.
 	 */
-	private final OkHttpClient clienteHttp;
+	private final HttpClient clienteHttp;
 
 	// ---------------------------------------------------------------------------------------------
 	// Constructor
 	// ---------------------------------------------------------------------------------------------
 
 	/**
-	 * Inicializa el cliente OkHttp con los tiempos de espera configurados.
+	 * Inicializa el cliente Http con los tiempos de espera configurados y la configuración de ssl definida.
 	 */
-	public HttpClient() {
+	public OwnHttpClient() {
 		// Leemos el timeout desde properties, usando valor por defecto si no existe
 		int tiempoEsperaSegundos = Integer.parseInt(PropertyLoader.getInstance()
 															.getApplicationProperty(
@@ -96,9 +91,7 @@ public class HttpClient {
 				PropertyLoader.getInstance()
 						.getApplicationProperty(PROP_CERT_ENABLED, "false")
 		);
-		OkHttpClient.Builder builder = new OkHttpClient.Builder()
-				.connectTimeout(Duration.ofSeconds(tiempoEsperaSegundos))
-				.readTimeout(Duration.ofSeconds(tiempoEsperaSegundos));
+		HttpClient.Builder builder = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(tiempoEsperaSegundos));
 
 		if (sslEnabled) {
 			String certFileName = PropertyLoader.getInstance()
@@ -125,10 +118,7 @@ public class HttpClient {
 				SSLContext sslContext = SSLContext.getInstance("TLS");
 				sslContext.init(null, tmf.getTrustManagers(), null);
 
-				builder.sslSocketFactory(
-						sslContext.getSocketFactory(),
-						(X509TrustManager) tmf.getTrustManagers()[0]
-				);
+				builder.sslContext(sslContext);
 
 				logger.info("SSL configurado usando certificado externo: {}", certPath);
 			} catch (Exception e) {
@@ -178,35 +168,39 @@ public class HttpClient {
 	 * @throws IOException Si ocurre un error de conexión, lectura o respuesta vacía.
 	 */
 	private String ejecutarPeticion(String urlString) throws IOException {
-		Request request = construirPeticion(urlString);
+		try {
+			HttpRequest request = construirPeticion(urlString);
+			HttpResponse<String> response = clienteHttp.send(request, HttpResponse.BodyHandlers.ofString());
 
-		try (Response response = clienteHttp.newCall(request).execute()) {
-
-			if (!response.isSuccessful()) {
-				logger.error("Error HTTP {} al acceder a {}", response.code(), urlString);
+			if (response.statusCode() / 100 != 2) {
+				logger.error("Error HTTP {} al acceder a {}", response.statusCode(), urlString);
 				throw new IOException(
-						"Error HTTP " + response.code() + " al acceder a: " + urlString);
+						"Error HTTP " + response.statusCode() + " al acceder a: " + urlString);
 			}
 
-			ResponseBody body = response.body();
+			String body = response.body();
 			if (body == null) {
 				logger.error("Respuesta vacía al acceder a {}", urlString);
 				throw new IOException("Respuesta HTTP vacía al acceder a: " + urlString);
 			}
 
-			return body.string();
+			return body;
 		} catch (IOException e) {
 			logger.error("Error ejecutando petición GET a {}: {}", urlString,
 						 e.getMessage());
 			throw e;
+		} catch (InterruptedException e) {
+			logger.error("Error de interrupción en la ejecución de la petición petición GET a {}: {}", urlString,
+					e.getMessage());
+			throw new IOException(e);
 		}
 	}
 
 	/**
 	 * Construye una petición GET estándar con cabecera JSON.
 	 */
-	private Request construirPeticion(String urlString) {
-		return new Request.Builder().url(urlString).get()
-				.addHeader(CABECERA_ACCEPT, TIPO_JSON).build();
+	private HttpRequest construirPeticion(String urlString) {
+		return HttpRequest.newBuilder().uri(URI.create(urlString)).GET().header(CABECERA_ACCEPT, TIPO_JSON)
+				.timeout(Duration.ofSeconds(DEFAULT_TIMEOUT_SEGUNDOS)).build();
 	}
 }

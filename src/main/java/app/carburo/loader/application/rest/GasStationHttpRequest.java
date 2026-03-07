@@ -1,6 +1,6 @@
 package app.carburo.loader.application.rest;
 
-import app.carburo.loader.util.network.HttpClient;
+import app.carburo.loader.util.network.OwnHttpClient;
 import app.carburo.loader.util.properties.PropertyLoader;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -32,7 +32,7 @@ public class GasStationHttpRequest {
 
 
 	//Utilitarios
-	private final HttpClient httpClient;
+	private final OwnHttpClient httpClient;
 	private final PropertyLoader propertyLoader;
 
 	public GasStationHttpRequest() {
@@ -42,7 +42,7 @@ public class GasStationHttpRequest {
 		//Inicializamos el cliente Http
 		try {
 			//Inicializamos el cliente HTTP
-			this.httpClient = new HttpClient();
+			this.httpClient = new OwnHttpClient();
 		}
 		//Comprobamos las excepciones del cliente HTTP
 		catch (Exception e) {
