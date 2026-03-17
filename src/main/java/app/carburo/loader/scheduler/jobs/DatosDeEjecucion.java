@@ -48,12 +48,6 @@ public class DatosDeEjecucion {
 	// Guarda si la respuesta de la API fue estructuralmente válida
 	private boolean apiRespuestaValida;
 
-	//Paseo JSON -> DTO
-	// Guarda el tiempo empleado en transformar JSON a DTOs
-	private long parseoJsonADtoTiempoMs;
-	// Guarda el número total de estaciones convertidas a DTO
-	private int parseoTotalEESSEnDto;
-
 	//Paseo DTO -> Entidades de dominio
 	// Guarda el número total de estaciones que se han parseado
 	private int parseoEESSTotal;
@@ -155,11 +149,6 @@ public class DatosDeEjecucion {
 				"Respuesta API válida          : " + apiRespuestaValida + "\n" +
 				"Tiempo HTTP                  : " +
 				formatoTiempo(tiempoTotalHttpRequestMs) + "\n\n" +
-
-				"PARSEO JSON → DTO\n------------------------------------------------------------\n" +
-				"Tiempo parseo JSON → DTO      : " +
-				formatoTiempo(parseoJsonADtoTiempoMs) + "\n" +
-				"Total EESS en DTO             : " + parseoTotalEESSEnDto + "\n\n" +
 
 				"PARSEO DTO → ENTIDADES\n------------------------------------------------------------\n" +
 				"Total EESS parseadas          : " + parseoEESSTotal + "\n" +

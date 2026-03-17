@@ -39,6 +39,20 @@
             <version>2.5.2</version>
         </dependency>
 
+        <!-- Carburo fuel-station-http-library  -->
+        <dependency>
+            <groupId>app.carburo.utils</groupId>
+            <artifactId>fuel-station-http-library</artifactId>
+            <version>1.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>3.1.0</version>
+            <scope>compile</scope>
+        </dependency>
+
         <!-- Retrofit -->
         <dependency>
             <groupId>com.squareup.retrofit2</groupId>

@@ -1,11 +1,11 @@
-package app.carburo.loader.application.rest.parser;
+package app.carburo.loader.application.parser;
 
 import app.carburo.loader.application.model.Combustible;
 import app.carburo.loader.application.model.EstacionDeServicio;
 import app.carburo.loader.application.model.PrecioCombustible;
-import app.carburo.loader.application.rest.dto.PreciosCombustibleParserDTO;
-import app.carburo.loader.config.parser.api.EstractorPreciosPorCodigo;
 import app.carburo.loader.util.log.Loggers;
+import app.carburo.utils.spainMitmaHTTP.shared.model.PreciosCombustibleResponseDTO;
+import app.carburo.utils.spainMitmaHTTP.shared.utils.EstractorPreciosPorCodigo;
 import org.slf4j.Logger;
 
 import java.time.LocalDate;
@@ -45,14 +45,14 @@ public class PreciosCombustibleParser {
 	 * @return Set<PrecioCombustible> Conjunto de objetos {@link PrecioCombustible} parseados.
 	 */
 	public Set<PrecioCombustible> parsePrecioCombustibleEESS(
-			PreciosCombustibleParserDTO item, EstacionDeServicio estacion,
+			PreciosCombustibleResponseDTO item, EstacionDeServicio estacion,
 			LocalDate fecha) {
 		// Defino el almacenamiento de salida
 		Set<PrecioCombustible> salidaPrecios = new HashSet<>();
 
 		PrecioCombustible precioCombustible;
 		for (Combustible c : combustibles) {
-			Function<PreciosCombustibleParserDTO, String> extractor = EstractorPreciosPorCodigo.PRECIO_EXTRACTORS.get(
+			Function<PreciosCombustibleResponseDTO, String> extractor = EstractorPreciosPorCodigo.PRECIO_EXTRACTORS.get(
 					c.getCodigo());
 			// No hay precio para este combustible en el DTO
 			if (extractor == null) continue;
@@ -87,7 +87,7 @@ public class PreciosCombustibleParser {
 	 * @param combustible Combustible a parsear
 	 * @return PrecioCombustible creado a partir del parseado
 	 */
-	public PrecioCombustible parsePrecioCombustibleEESS(PreciosCombustibleParserDTO item,
+	public PrecioCombustible parsePrecioCombustibleEESS(PreciosCombustibleResponseDTO item,
 														EstacionDeServicio estacion,
 														LocalDate fecha,
 														Combustible combustible) {

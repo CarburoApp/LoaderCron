@@ -1,12 +1,12 @@
-package app.carburo.loader.application.rest.parser;
+package app.carburo.loader.application.parser;
 
 import app.carburo.loader.application.Factorias;
 import app.carburo.loader.application.model.EstacionDeServicio;
-import app.carburo.loader.application.rest.dto.EETTReqResParserDTO;
-import app.carburo.loader.application.rest.dto.ESParserDTO;
 import app.carburo.loader.application.service.ServiceFactory;
 import app.carburo.loader.scheduler.jobs.DatosDeEjecucion;
 import app.carburo.loader.util.log.Loggers;
+import app.carburo.utils.spainMitmaHTTP.shared.model.EstacionDeServicioResponseDTO;
+import app.carburo.utils.spainMitmaHTTP.shared.model.EstacionDeServicioTerrestreResponseDTO;
 import org.slf4j.Logger;
 
 import java.time.LocalDate;
@@ -20,7 +20,7 @@ import java.util.List;
 
 /**
  * Clase de alto nivel para parsear la petición a la api, actualmente introducida en el
- * DTO {@link EETTReqResParserDTO}. A continuación
+ * DTO {@link EstacionDeServicioTerrestreResponseDTO}. A continuación
  * se procesará para obtener las estaciones de servicio (EESS) y sus precios correspondientes.
  * <p>
  * Este proceso de parseo tiene el uso principal de convertir los actuales DTOs en entidades
@@ -44,7 +44,7 @@ public class EETTReqResParser {
 	/**
 	 * Datos de ejecución
 	 */
-	private final EETTReqResParserDTO dto;
+	private final EstacionDeServicioTerrestreResponseDTO dto;
 	private final DatosDeEjecucion datosDeEjecucion;
 
 	/**
@@ -54,7 +54,7 @@ public class EETTReqResParser {
 	 * @param datosDeEjecucion Datos de ejecución del cron actual.
 	 * @throws IllegalArgumentException Si el DTO es nulo o no contiene datos válidos.
 	 */
-	public EETTReqResParser(EETTReqResParserDTO dto, DatosDeEjecucion datosDeEjecucion) {
+	public EETTReqResParser(EstacionDeServicioTerrestreResponseDTO dto, DatosDeEjecucion datosDeEjecucion) {
 		loggerParse.info(ETIQUETA_LOGGER +
 								 "Inicializando el parser de EETTReqResParser para el DTO recibido.");
 		if (dto == null) {
@@ -129,7 +129,7 @@ public class EETTReqResParser {
 	 * @throws IllegalArgumentException Si no está presente o no tiene un formato válido.
 	 */
 	private List<EstacionDeServicio> parseListaEESS() {
-		List<ESParserDTO> listaEESS = dto.getListaEESS();
+		List<EstacionDeServicioResponseDTO> listaEESS = dto.getListaEESS();
 		if (listaEESS == null) throw new IllegalArgumentException(
 				"La lista de estaciones de servicios de la petición a la API no está presente en el DTO recibido.");
 
@@ -146,10 +146,10 @@ public class EETTReqResParser {
 	 * @param listaEESS Lista de EESS en formato DTO
 	 * @return Lista de EESS en formato dominio
 	 */
-	private List<EstacionDeServicio> parseListaEESSADominio(List<ESParserDTO> listaEESS) {
+	private List<EstacionDeServicio> parseListaEESSADominio(List<EstacionDeServicioResponseDTO> listaEESS) {
 		// Definimos la lista de salida
 		List<EstacionDeServicio> resultado = new ArrayList<>();
-		List<ESParserDTO> conFallos = new ArrayList<>();
+		List<EstacionDeServicioResponseDTO> conFallos = new ArrayList<>();
 
 		// Creamos el parser de EESS con los datos de referencia actuales
 		EESSParser eessParser = createANewEESSParser();
@@ -158,7 +158,7 @@ public class EETTReqResParser {
 
 		// Parseamos cada EESS del DTO recibido
 		EstacionDeServicio estacionDeServicio;
-		for (ESParserDTO estacionDeServicioDTO : listaEESS) {
+		for (EstacionDeServicioResponseDTO estacionDeServicioDTO : listaEESS) {
 			try {
 				estacionDeServicio = parseESADominio(eessParser, estacionDeServicioDTO);
 			} catch (IllegalArgumentException | IllegalStateException e) {
@@ -237,7 +237,7 @@ public class EETTReqResParser {
 	 * @throws IllegalArgumentException Si en el proceso de parseo ocurre algún error.
 	 */
 	private EstacionDeServicio parseESADominio(EESSParser eessParser,
-											   ESParserDTO estacionDeServicioDTO) {
+											   EstacionDeServicioResponseDTO estacionDeServicioDTO) {
 		if (estacionDeServicioDTO == null) throw new IllegalArgumentException(
 				"La estación de servicio (EESS) recibida es nula.");
 

@@ -1,15 +1,15 @@
-package app.carburo.loader.application.rest.parser;
+package app.carburo.loader.application.parser;
 
 import app.carburo.loader.application.Factorias;
 import app.carburo.loader.application.model.*;
 import app.carburo.loader.application.model.enums.Margen;
 import app.carburo.loader.application.model.enums.Remision;
 import app.carburo.loader.application.model.enums.Venta;
-import app.carburo.loader.application.rest.dto.ESParserDTO;
-import app.carburo.loader.application.rest.dto.PreciosCombustibleParserDTO;
 import app.carburo.loader.application.service.ServiceFactory;
 import app.carburo.loader.scheduler.jobs.DatosDeEjecucion;
 import app.carburo.loader.util.log.Loggers;
+import app.carburo.utils.spainMitmaHTTP.shared.model.EstacionDeServicioResponseDTO;
+import app.carburo.utils.spainMitmaHTTP.shared.model.PreciosCombustibleResponseDTO;
 import org.slf4j.Logger;
 
 import java.time.LocalDate;
@@ -49,8 +49,7 @@ public class EESSParser {
 		ServiceFactory serviceFactory = Factorias.service;
 
 		// Crear los mapas de referencia para el parser
-		Set<Combustible> combustibles = new HashSet<>(
-				serviceFactory.forCombustible().findAllCombustibles());
+		Set<Combustible> combustibles = new HashSet<>(serviceFactory.forCombustible().findAllCombustibles());
 
 		this.provinciasMap = serviceFactory.forProvincia().findAllProvincias().stream()
 				.collect(Collectors.toMap(Provincia::getExtCode, p -> p));
@@ -63,19 +62,19 @@ public class EESSParser {
 	}
 
 	/**
-	 * Parsea un {@link ESParserDTO} de gasolinera y devuelve un objeto EESS
+	 * Parsea un {@link EstacionDeServicioResponseDTO} de gasolinera y devuelve un objeto EESS
 	 * con toda la información, incluyendo relación con Municipio, Provincia y precios de combustibles.
 	 *
-	 * @param item {@link ESParserDTO} de la estación.
+	 * @param item {@link EstacionDeServicioResponseDTO} de la estación.
 	 * @param fecha {@link LocalDate} Fecha de los precios.
 	 * @return  {@link EstacionDeServicio} EESS parseada y persistida si no existía previamente.
 	 * @throws IllegalArgumentException si algún campo es inválido según las reglas de negocio.
 	 *
 	 */
-	public EstacionDeServicio parseEESS(ESParserDTO item, LocalDate fecha) {
+	public EstacionDeServicio parseEESS(EstacionDeServicioResponseDTO item, LocalDate fecha) {
 
 		// 1. Obtenemos la identificación, que se asocia a nuestro @EstacionDeServicio.extCode
-		int extCode = parseId(item);
+		int extCode = item.getIdeess(); // Comprobación de validez del extCode en el setter del constructor de EESS.
 
 		// 2. Parseamos relacionados con objetos
 		Provincia provincia = parseProvincia(item);
@@ -84,9 +83,9 @@ public class EESSParser {
 		// 3. Los campos básicos se parsean directamente en el constructor
 
 		// 4. Parseamos los enumerados
-		Venta venta = parseVenta(item);
-		Remision remision = parseRemision(item);
-		Margen margen = parseMargen(item);
+		Venta venta = parseVentaDTO(item);
+		Remision remision = parseRemisionDTO(item);
+		Margen margen = parseMargenDTO(item);
 
 		// 5. Parseamos las coordenadas
 		double longitud = parseLongitud(item);
@@ -114,11 +113,11 @@ public class EESSParser {
 	/**
 	 * Parsea y acopla los precios de combustibles a una EESS dada.
 	 *
-	 * @param item  PreciosCombustibleParserDTO de la estación
+	 * @param item  PreciosCombustibleResponseDTO de la estación
 	 * @param fecha Fecha de los precios
 	 * @param eess  Estación de servicio a la que se le acoplan los precios
 	 */
-	public void parsePrecios(PreciosCombustibleParserDTO item, LocalDate fecha,
+	public void parsePrecios(PreciosCombustibleResponseDTO item, LocalDate fecha,
 							 EstacionDeServicio eess) {
 		Set<PrecioCombustible> prComb;
 		// Parseo los precios de combustibles
@@ -142,36 +141,23 @@ public class EESSParser {
 	// MÉTODOS PRIVADOS PARA CADA CAMPO
 	// ==============================
 
-	//ID
-
-	private int parseId(ESParserDTO item) {
-		int value = item.getIdeess();
-		if (value <= 0) {
-			throw new IllegalArgumentException("ID EESS inválido: " + value);
-		}
-		return value;
-	}
-
-	// Datos básicos
-
-
-	private String parseRotulo(ESParserDTO item) {
+	private String parseRotulo(EstacionDeServicioResponseDTO item) {
 		return item.getRotulo();
 	}
 
-	private String parseHorario(ESParserDTO item) {
+	private String parseHorario(EstacionDeServicioResponseDTO item) {
 		return item.getHorario();
 	}
 
-	private String parseDireccion(ESParserDTO item) {
+	private String parseDireccion(EstacionDeServicioResponseDTO item) {
 		return item.getDireccion();
 	}
 
-	private String parseLocalidad(ESParserDTO item) {
+	private String parseLocalidad(EstacionDeServicioResponseDTO item) {
 		return item.getLocalidad();
 	}
 
-	private int parseCodigoPostal(ESParserDTO item) {
+	private int parseCodigoPostal(EstacionDeServicioResponseDTO item) {
 		int cp = item.getCp();
 		try {
 			if (cp < 1000 || cp > 52999)
@@ -184,7 +170,7 @@ public class EESSParser {
 
 	// Objetos
 
-	private Provincia parseProvincia(ESParserDTO item) {
+	private Provincia parseProvincia(EstacionDeServicioResponseDTO item) {
 		int extIdProvincia = item.getIdProvincia();
 		if (extIdProvincia < 0 || extIdProvincia > Short.MAX_VALUE) {
 			throw new IllegalArgumentException(
@@ -196,7 +182,7 @@ public class EESSParser {
 		return provinciasMap.get(Integer.valueOf(extIdProvincia).shortValue());
 	}
 
-	private Municipio parseMunicipio(ESParserDTO item) {
+	private Municipio parseMunicipio(EstacionDeServicioResponseDTO item) {
 		int extIdMunicipio = item.getIdMunicipio();
 		if (extIdMunicipio < 0 || extIdMunicipio > Short.MAX_VALUE) {
 			throw new IllegalArgumentException(
@@ -210,21 +196,41 @@ public class EESSParser {
 
 	// Enums
 
-	private Margen parseMargen(ESParserDTO item) {
-		return item.getMargen().getRelacionModelo();
+	private Margen parseMargenDTO(EstacionDeServicioResponseDTO dto) {
+		if (dto == null || dto.getMargen() == null) throw new IllegalArgumentException();
+
+		return switch (dto.getMargen()) {
+			case DERECHO -> Margen.DERECHO;
+			case IZQUIERDO -> Margen.IZQUIERDO;
+			default -> Margen.NO_APLICA;
+		};
 	}
 
-	private Remision parseRemision(ESParserDTO item) {
-		return item.getRemision().getRelacionModelo();
+	private Remision parseRemisionDTO(EstacionDeServicioResponseDTO dto) {
+		if (dto == null || dto.getRemision() == null) throw new IllegalArgumentException();
+
+		return switch (dto.getRemision()) {
+			case DM -> Remision.DM;
+			case OM -> Remision.OM;
+			default ->
+					throw new IllegalStateException("No se debería de llegar a este punto, el valor de remisión debería ser DM o OM. Valor actual: " + dto.getRemision());
+		};
 	}
 
-	private Venta parseVenta(ESParserDTO item) {
-		return item.getTipoVenta().getRelacionModelo();
+	private Venta parseVentaDTO(EstacionDeServicioResponseDTO dto) {
+		if (dto == null || dto.getTipoVenta() == null) throw new IllegalArgumentException();
+
+		return switch (dto.getTipoVenta()) {
+			case PUBLICA -> Venta.PUBLICA;
+			case RESTRINGIDA -> Venta.RESTRINGIDA;
+			default ->
+					throw new IllegalStateException("No se debería de llegar a este punto, el valor de venta debería ser publica o privada. Valor actual: " + dto.getTipoVenta());
+		};
 	}
 
 	// Coordenadas
 
-	private double parseLatitud(ESParserDTO item) {
+	private double parseLatitud(EstacionDeServicioResponseDTO item) {
 		String latStr = item.getLatitud().replace(",", ".").trim();
 		if (latStr.isEmpty()) throw new IllegalArgumentException("Latitud vacía o nula.");
 		double lat = Double.parseDouble(latStr);
@@ -232,7 +238,7 @@ public class EESSParser {
 		throw new IllegalArgumentException("Latitud fuera de rango: " + lat);
 	}
 
-	private double parseLongitud(ESParserDTO item) {
+	private double parseLongitud(EstacionDeServicioResponseDTO item) {
 		String lonStr = item.getLongitud().replace(",", ".").trim();
 		if (lonStr.isEmpty())
 			throw new IllegalArgumentException("Longitud vacía o nula.");
@@ -244,12 +250,11 @@ public class EESSParser {
 
 	// Datos numericos
 
-	private double parseBioEtanol(ESParserDTO item) {
+	private double parseBioEtanol(EstacionDeServicioResponseDTO item) {
 		String bioEtanol = item.getBioEtanol();
 		if (bioEtanol == null || bioEtanol.isEmpty()) {
-			parseLog.error(
-					"Error parseando EESS id: {}. El BioEtanol no se encuentra definido. Se deja valor por defecto 0.",
-					parseId(item));
+			parseLog.error("Error parseando EESS id: {}. El BioEtanol no se encuentra definido. Se deja valor por defecto 0.",
+					item.getIdeess());
 			return 0;
 		}
 		try {
@@ -264,12 +269,12 @@ public class EESSParser {
 		}
 	}
 
-	private double parseEsterMetilico(ESParserDTO item) {
+	private double parseEsterMetilico(EstacionDeServicioResponseDTO item) {
 		String esterMetilico = item.getEsterMetilico();
 		if (esterMetilico == null || esterMetilico.isEmpty()) {
 			parseLog.error(
 					"Error parseando EESS id: {}. El Ester Metílico no se encuentra definido. Se deja valor por defecto 0.",
-					parseId(item));
+					item.getIdeess());
 			return 0;
 		}
 		try {

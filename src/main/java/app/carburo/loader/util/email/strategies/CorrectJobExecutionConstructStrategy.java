@@ -138,9 +138,6 @@ public class CorrectJobExecutionConstructStrategy implements EmailConstructStrat
 				Map.entry(PH_API_RESPUESTA_VALIDA, String.valueOf(datos.isApiRespuestaValida())),
 				Map.entry(PH_TIEMPO_TOTAL_HTTP_REQUEST_MS, datos.formatoTiempo(datos.getTiempoTotalHttpRequestMs())),
 
-				Map.entry(PH_PARSEO_JSON_A_DTO_TIEMPO_MS, datos.formatoTiempo(datos.getParseoJsonADtoTiempoMs())),
-				Map.entry(PH_PARSEO_TOTAL_EESS_EN_DTO, String.valueOf(datos.getParseoTotalEESSEnDto())),
-
 				Map.entry(PH_PARSEO_EESS_TOTAL, String.valueOf(datos.getParseoEESSTotal())),
 				Map.entry(PH_PARSEO_EESS_CORRECTAS, String.valueOf(datos.getParseoEESSCorrectas())),
 				Map.entry(PH_PARSEO_EESS_ERRONEAS, String.valueOf(datos.getParseoEESSErroneas())),

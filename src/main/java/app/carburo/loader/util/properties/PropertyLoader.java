@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 /**
  * Clase singleton para manejar propiedades de la aplicación.
  * <p>
- * Permite cargar múltiples archivos de propiedades (application, endpoints, queries)
+ * Permite cargar múltiples archivos de propiedades (application, queries)
  * y acceder a sus valores de manera centralizada. Garantiza que solo exista una instancia
  * de la clase durante toda la ejecución de la aplicación.
  * <p>
@@ -32,14 +32,12 @@ public final class PropertyLoader {
 	// ==============================
 	private static final String CONFIG_FOLDER = "config";
 	private static final String APPLICATION_PROPERTIES = "application.properties";
-	private static final String ENDPOINTS_PROPERTIES = "endpoints.properties";
 	private static final String QUERIES_PROPERTIES = "queries.properties";
 
 	// ==============================
 	// Propiedades internas
 	// ==============================
 	private final Properties applicationProps = new Properties(); // configuración general de la aplicación
-	private final Properties endpointsProps = new Properties(); // endpoints de servicios
 	private final Properties queriesProps = new Properties(); // queries JDBC
 
 	/**
@@ -48,7 +46,6 @@ public final class PropertyLoader {
 	 */
 	private PropertyLoader() {
 		loadProperties(APPLICATION_PROPERTIES, applicationProps);
-		loadProperties(ENDPOINTS_PROPERTIES, endpointsProps);
 		loadProperties(QUERIES_PROPERTIES, queriesProps);
 	}
 
@@ -57,7 +54,7 @@ public final class PropertyLoader {
 	 * <p>
 	 * Esta utilidad permite actualizar dinámicamente los valores de las properties
 	 * sin necesidad de reiniciar la aplicación. Simplemente vuelve a cargar
-	 * application.properties, endpoints.properties  y queries.properties.
+	 * application.properties, y queries.properties.
 	 * </p>
 	 *
 	 * <b>Nota:</b> Cualquier property que se haya modificado en disco desde la carga inicial
@@ -68,7 +65,6 @@ public final class PropertyLoader {
 	public void reloadProperties() {
 
 		loadProperties(APPLICATION_PROPERTIES, applicationProps);
-		loadProperties(ENDPOINTS_PROPERTIES, endpointsProps);
 		loadProperties(QUERIES_PROPERTIES, queriesProps);
 
 		Loggers.GENERAL.info("RECARGADA de TODAS las PROPIEDADES correctamente desde disco.");
@@ -179,15 +175,6 @@ public final class PropertyLoader {
 		return applicationProps;
 	}
 
-	/**
-	 * Devuelve todas las propiedades de endpoints.properties
-	 *
-	 * @return objeto Properties completo de endpoints.properties
-	 */
-	public Properties getEndpointsProperties() {
-		return endpointsProps;
-	}
-
 
 	// ==============================
 	// Métodos para obtener propiedades
@@ -202,17 +189,6 @@ public final class PropertyLoader {
 	public String getApplicationProperty(String key) {
 		return applicationProps.getProperty(key);
 	}
-
-	/**
-	 * Obtiene el valor de una propiedad de endpoints.properties
-	 *
-	 * @param key clave de la propiedad
-	 * @return valor asociado a la clave o null si no existe
-	 */
-	public String getEndpointProperty(String key) {
-		return endpointsProps.getProperty(key);
-	}
-
 
 	/**
 	 * Obtiene el valor de una propiedad de queries.properties
@@ -239,17 +215,4 @@ public final class PropertyLoader {
 	public String getApplicationProperty(String key, String defaultValue) {
 		return applicationProps.getProperty(key, defaultValue);
 	}
-
-	/**
-	 * Obtiene el valor de una propiedad de endpoints.properties, devolviendo un valor por defecto
-	 * si la clave no existe.
-	 *
-	 * @param key          clave de la propiedad
-	 * @param defaultValue valor por defecto si la propiedad no existe
-	 * @return valor de la propiedad o defaultValue
-	 */
-	public String getEndpointProperty(String key, String defaultValue) {
-		return endpointsProps.getProperty(key, defaultValue);
-	}
-
 }

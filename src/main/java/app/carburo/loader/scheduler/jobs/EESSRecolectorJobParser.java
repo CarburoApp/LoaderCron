@@ -1,27 +1,24 @@
 package app.carburo.loader.scheduler.jobs;
 
 import app.carburo.loader.application.model.EstacionDeServicio;
-import app.carburo.loader.application.rest.GasStationHttpRequest;
-import app.carburo.loader.application.rest.dto.EETTReqResParserDTO;
-import app.carburo.loader.application.rest.dto.ESParserDTO;
-import app.carburo.loader.application.rest.parser.EETTReqResParser;
+import app.carburo.loader.application.parser.EETTReqResParser;
 import app.carburo.loader.config.cache.ApplicationCache;
-import app.carburo.loader.config.parser.deserialize.ESParserDTODeserializer;
 import app.carburo.loader.config.persistencia.jdbc.Jdbc;
 import app.carburo.loader.util.email.EmailSender;
 import app.carburo.loader.util.email.strategies.CorrectJobExecutionConstructStrategy;
 import app.carburo.loader.util.email.strategies.FailedJobExecutionConstructStrategy;
 import app.carburo.loader.util.log.Loggers;
 import app.carburo.loader.util.properties.PropertyLoader;
+import app.carburo.utils.HTTPClient;
+import app.carburo.utils.spainMitmaHTTP.SpainMitmaAPIClient;
+import app.carburo.utils.spainMitmaHTTP.services.eessTerrestres.GetEESSTerrestresService;
+import app.carburo.utils.spainMitmaHTTP.shared.model.EstacionDeServicioTerrestreResponseDTO;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.FileAppender;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
-import org.json.JSONObject;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -29,9 +26,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
-import static app.carburo.loader.config.parser.api.ResponseKeys.API_KEY_RESP_LISTADO_EESS;
-import static app.carburo.loader.config.parser.api.ResponseKeys.API_KEY_RESP_RES_CONSULTA;
 
 /**
  * Job Quartz encargado de la recolección, parseo y persistencia
@@ -130,18 +124,16 @@ public class EESSRecolectorJobParser implements Job {
 			comprobarConexionBD();
 
 			// Realizar la petición a la API externa para obtener los datos,
-			JSONObject json = obtenerDatosDesdeAPI();
-			// Extraer todos los datos del JSON a los DTOs correspondientes
-			EETTReqResParserDTO dto = mapearJsonADTO(json);
+			EstacionDeServicioTerrestreResponseDTO apiResponse = obtenerDatosDesdeAPI();
 
-			if (dto.getListaEESS().isEmpty()) {
+			if (apiResponse.getListaEESS().isEmpty()) {
 				loggerCron.warn(LOG_DTO_RECUPERADO_VACIO);
 				datosEjecucion.addWarning(LOG_DTO_RECUPERADO_VACIO);
 				finalizarEjecucionCorrecta(inicioCronMs);
 				return;
 			}
 
-			List<EstacionDeServicio> estaciones = parsearEstaciones(dto);
+			List<EstacionDeServicio> estaciones = parsearEstaciones(apiResponse);
 			persistirEstaciones(estaciones);
 			finalizarEjecucionCorrecta(inicioCronMs);
 		} catch (Throwable t) {
@@ -172,9 +164,9 @@ public class EESSRecolectorJobParser implements Job {
 		if (!Jdbc.testConnection()) throw new IOException(LOG_DB_CONNECTION_ERROR);
 	}
 
-	private JSONObject obtenerDatosDesdeAPI() throws IOException {
+	private EstacionDeServicioTerrestreResponseDTO obtenerDatosDesdeAPI() throws IOException {
 		try {
-			return doAPIReqAndIsRespOK();
+			return doAPIResquestAndCheckResponse();
 		} catch (IOException e) {
 			throw e;
 		} catch (Exception e) {
@@ -182,15 +174,7 @@ public class EESSRecolectorJobParser implements Job {
 		}
 	}
 
-	private EETTReqResParserDTO mapearJsonADTO(JSONObject json) {
-		try {
-			return extraeDatosDesdeJSONaDTO(json);
-		} catch (JsonSyntaxException e) {
-			throw new IllegalStateException("Error parseando JSON a DTO.", e);
-		}
-	}
-
-	private List<EstacionDeServicio> parsearEstaciones(EETTReqResParserDTO dto) {
+	private List<EstacionDeServicio> parsearEstaciones(EstacionDeServicioTerrestreResponseDTO dto) {
 		List<EstacionDeServicio> estaciones = doESDtoParseToES(dto);
 		if (estaciones == null || estaciones.isEmpty())
 			throw new IllegalStateException(LOG_NO_EESS_PARSED);
@@ -292,13 +276,13 @@ public class EESSRecolectorJobParser implements Job {
 
 
 	/**
-	 * Obtiene el JSON de estaciones desde la API externa, validando la respuesta.
+	 * Obtiene el JSON de estaciones desde la API externa, a través de la librería externa, validando la respuesta.
 	 * Implementa reintentos configurables desde properties.
 	 *
-	 * @return JSONObject con la respuesta de la API
+	 * @return EstacionDeServicioTerrestreResponseDTO con la respuesta de la API
 	 * @throws IllegalStateException Si no se obtiene una respuesta válida tras todos los intentos
 	 */
-	private JSONObject doAPIReqAndIsRespOK() throws IllegalStateException, IOException {
+	private EstacionDeServicioTerrestreResponseDTO doAPIResquestAndCheckResponse() throws IllegalStateException, IOException {
 		// Leemos la configuración desde las properties (como String) y convertimos a tipos correctos
 		PropertyLoader loader = PropertyLoader.getInstance();
 		int maxIntentos = Integer.parseInt(
@@ -308,6 +292,12 @@ public class EESSRecolectorJobParser implements Job {
 		long sleepMs = Long.parseLong(loader.getApplicationProperty(PROP_TIEMPO_SLEEP_MS,
 																	String.valueOf(
 																			DEFAULT_SLEEP_MS)));
+		// Creación de la instancia del cliente HTTP usado para la petición a la API externa (libreria)
+		// Usamos la api del mitma
+		SpainMitmaAPIClient client = new HTTPClient(loggerCron).getSpainAPIClient();
+		// Definimos el servicio que consume los datos actuales
+		GetEESSTerrestresService service = client.getEESSTerrestresService();
+
 		for (int nIntento = 1; nIntento <= maxIntentos; nIntento++) {
 			long inicioPeticion = System.currentTimeMillis();
 			try {
@@ -315,23 +305,18 @@ public class EESSRecolectorJobParser implements Job {
 								nIntento, maxIntentos);
 
 				// Realiza la petición HTTP a la API externa
-				GasStationHttpRequest request = new GasStationHttpRequest();
-				JSONObject respuestaAPI = request.getAllStations();
+				EstacionDeServicioTerrestreResponseDTO respuestaAPI = service.getListadoEstacionDeServicioTerrestre();
 
 				// Calculamos el tiempo de respuesta
 				datosEjecucion.setTiempoTotalHttpRequestMs(
 						System.currentTimeMillis() - inicioPeticion);
 
 				// Validamos la estructura de la respuesta
-				if (respuestaAPI.keySet().contains(API_KEY_RESP_RES_CONSULTA) &&
-						respuestaAPI.keySet().contains(API_KEY_RESP_RES_CONSULTA) &&
-						respuestaAPI.keySet().contains(API_KEY_RESP_LISTADO_EESS)) {
+				if (isValidResponse(respuestaAPI)) {
 					datosEjecucion.setApiRespuestaValida(true);
 					datosEjecucion.setApiHttpIntentosRealizados(nIntento);
 					// Guardamos información adicional para seguimiento
-					datosEjecucion.setApiTotalEESSRecibidasJson(
-							respuestaAPI.getJSONArray(API_KEY_RESP_LISTADO_EESS)
-									.length());
+					datosEjecucion.setApiTotalEESSRecibidasJson(respuestaAPI.getListaEESS().size());
 					// Guardamos la respuesta en archivo para auditoría/debug
 					guardarRespuestaAPIEnArchivo(respuestaAPI);
 
@@ -345,23 +330,18 @@ public class EESSRecolectorJobParser implements Job {
 						"ERROR al VALIDAR la RESPUESTA JSON de la API.");
 				loggerCron.error(e.getMessage());
 				throw e;
-
 			} catch (Exception e) {
 				loggerCron.error("ERROR al REALIZAR la PETICIÓN HTTP a la API en el intento número {}: {}",
 								 nIntento, e.getMessage(), e);
 
 				// Si no hemos alcanzado el máximo de reintentos, dormimos antes de reintentar
 				if (nIntento < maxIntentos) {
-					loggerCron.info(
-							"El SISTEMA DUERME {} ms antes de REINTENTAR la PETICIÓN.",
-							sleepMs);
+					loggerCron.info("El SISTEMA DUERME {} ms antes de REINTENTAR la PETICIÓN.", sleepMs);
 					try {
 						Thread.sleep(sleepMs);
 					} catch (InterruptedException ie) {
 						Thread.currentThread().interrupt();
-						throw new IllegalStateException(
-								"El hilo fue interrumpido durante el sleep de reintento.",
-								ie);
+						throw new IllegalStateException("El hilo fue interrumpido durante el sleep de reintento.", ie);
 					}
 				}
 			}
@@ -371,34 +351,9 @@ public class EESSRecolectorJobParser implements Job {
 												maxIntentos + " intentos.");
 	}
 
-	/**
-	 * Extrae los datos del JSON de respuesta a un DTO usando Gson.
-	 *
-	 * @param jsonRespuestaAPI JSON de respuesta de la API
-	 * @return El DTO con los datos extraídos
-	 */
-	private EETTReqResParserDTO extraeDatosDesdeJSONaDTO(JSONObject jsonRespuestaAPI)
-			throws JsonSyntaxException {
-		long tiempoInicioEjecucion = System.currentTimeMillis();
-		// Crear instancia de Gson
-		Gson gson = new GsonBuilder().registerTypeAdapter(ESParserDTO.class,
-														  new ESParserDTODeserializer())
-				.create();
-		// Mapear JSON a DTO
-		EETTReqResParserDTO dto = gson.fromJson(jsonRespuestaAPI.toString(),
-												EETTReqResParserDTO.class);
-		datosEjecucion.setParseoJsonADtoTiempoMs(
-				System.currentTimeMillis() - tiempoInicioEjecucion);
-		datosEjecucion.setParseoTotalEESSEnDto(dto.getListaEESS().size());
-		if (datosEjecucion.getParseoTotalEESSEnDto() == 0) {
-			loggerCron.warn(
-					"No se transformado ninguna estación a DTO. CRON finalizado.");
-			datosEjecucion.addWarning(
-					"No se transformado ninguna estación a DTO. CRON finalizado.");
-		}
-		return dto;
+	private boolean isValidResponse(EstacionDeServicioTerrestreResponseDTO respuestaAPI) {
+		return respuestaAPI.getResultadoConsulta() != null && respuestaAPI.getFecha() != null && respuestaAPI.getResultadoConsulta() != null && respuestaAPI.getListaEESS() != null;
 	}
-
 
 	/**
 	 * Parsea las estaciones de servicio desde el DTO obtenido del JSON de la API.
@@ -406,7 +361,7 @@ public class EESSRecolectorJobParser implements Job {
 	 * @param apiRequestDto DTO con los datos de la API
 	 * @return Lista de estaciones de servicio parseadas
 	 */
-	private List<EstacionDeServicio> doESDtoParseToES(EETTReqResParserDTO apiRequestDto) {
+	private List<EstacionDeServicio> doESDtoParseToES(EstacionDeServicioTerrestreResponseDTO apiRequestDto) {
 		// Defino la respuesta del parser
 		List<EstacionDeServicio> estacionesDeServicioParseadas = null;
 		// Instanciamos el parser y lanzamos el parseo
@@ -433,13 +388,13 @@ public class EESSRecolectorJobParser implements Job {
 
 
 	/**
-	 * Guarda la respuesta JSON de la API en un archivo local con formato legible.
+	 * Guarda la respuesta de la API en un archivo local con formato legible.
 	 * La ubicación del archivo se puede configurar mediante properties.
 	 * Si no se configura, se guarda en la ubicación por defecto (directorio actual).
 	 *
-	 * @param jsonRespuestaAPI JSON de respuesta de la API
+	 * @param apiResponseDTO Objeto {@link EstacionDeServicioTerrestreResponseDTO} de respuesta de la API
 	 */
-	private void guardarRespuestaAPIEnArchivo(JSONObject jsonRespuestaAPI) {
+	private void guardarRespuestaAPIEnArchivo(EstacionDeServicioTerrestreResponseDTO apiResponseDTO) {
 		// Obtener ruta desde properties, "Ejecuciones" por defecto
 		String rutaDirectorio = PropertyLoader.getInstance()
 				.getApplicationProperty("cron.api.requests.filepath", "files").trim();
@@ -458,23 +413,17 @@ public class EESSRecolectorJobParser implements Job {
 			if (!carpeta.exists()) {
 				try {
 					if (!carpeta.mkdirs()) {
-						loggerCron.warn(LOG_JSON_SAVE_ERROR +
-												"No se pudo crear el directorio: {}",
-										rutaDirectorio);
+						loggerCron.warn(LOG_JSON_SAVE_ERROR + "No se pudo crear el directorio: {}", rutaDirectorio);
 						datosEjecucion.addWarning(LOG_DTO_RECUPERADO_VACIO);
 					}
 					return;
 				} catch (SecurityException e) {
-					loggerCron.warn(LOG_JSON_SAVE_ERROR +
-											"No hay permisos para crear el directorio: {}",
-									rutaDirectorio, e);
+					loggerCron.warn(LOG_JSON_SAVE_ERROR + "No hay permisos para crear el directorio: {}", rutaDirectorio, e);
 					return;
 				}
 			}
 			if (!carpeta.isDirectory()) {
-				loggerCron.warn(LOG_JSON_SAVE_ERROR +
-										"La ruta existe pero no es un directorio: {}",
-								rutaDirectorio);
+				loggerCron.warn(LOG_JSON_SAVE_ERROR + "La ruta existe pero no es un directorio: {}", rutaDirectorio);
 				return;
 			}
 			datosEjecucion.setArchivoRespuestaApiJson(new File(carpeta, nombreArchivo));
@@ -483,14 +432,15 @@ public class EESSRecolectorJobParser implements Job {
 
 		try (FileWriter writer = new FileWriter(
 				datosEjecucion.getArchivoRespuestaApiJson())) {
-			writer.write(jsonRespuestaAPI.toString(4)); // identación de 4 espacios
+			ObjectMapper mapper = new ObjectMapper();
+			String json = mapper.writeValueAsString(apiResponseDTO);
+			writer.write(json);
 			writer.flush();
 			loggerCron.info(
 					"Almacenada respuesta de la API en la ubicación designada. Bajo el nombre: {}",
 					datosEjecucion.getArchivoRespuestaApiJson().getName());
 		} catch (IOException e) {
-			loggerCron.error(LOG_JSON_SAVE_ERROR +
-									 "Error al guardar la respuesta de la API en archivo: {}",
+			loggerCron.error(LOG_JSON_SAVE_ERROR + "Error al guardar la respuesta de la API en archivo: {}",
 							 e.getMessage(), e);
 		}
 	}
