@@ -46,9 +46,9 @@ public class EmailSender {
 	private final String fromEmail = CONFIG.getApplicationProperty("mail.from");
 	private final String password = CONFIG.getApplicationProperty("mail.password");
 	private final String toEmail = CONFIG.getApplicationProperty("mail.to");
-	private final String smtpHost = CONFIG.getApplicationProperty("mail.smtp.host");
+	private final String smtpHost = CONFIG.getApplicationProperty(MAIL_SMTP_HOST);
 	private final int smtpPort = Integer.parseInt(
-			CONFIG.getApplicationProperty("mail.smtp.port"));
+			CONFIG.getApplicationProperty(MAIL_SMTP_PORT));
 
 
 	// Email que se va a enviar, definido mediante el patrón Strategy
