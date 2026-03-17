@@ -21,6 +21,19 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      - name: Download library
+        run: |
+          curl -L -o fuel-lib.jar https://github.com/CarburoApp/fuel-station-http-library/releases/download/v1.0/fuel-station-http-library-1.0.jar
+
+      - name: Install library
+        run: |
+          mvn install:install-file \
+            -Dfile=fuel-lib.jar \
+            -DgroupId=app.carburo.utils \
+            -DartifactId=fuel-station-http-library \
+            -Dversion=1.0 \
+            -Dpackaging=jar
+
       - name: Build with Maven
         run: mvn clean package -DskipTests
 
