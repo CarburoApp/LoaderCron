@@ -18,7 +18,11 @@ public class PrecioCombustible {
 	// CONSTANTES
 	// ==============================
 	public static final LocalDate FECHA_MIN = LocalDate.of(2003, 1, 1);
-	public static final LocalDate FECHA_MAX = LocalDate.now();
+
+	public static LocalDate FECHA_MAX() {
+		return LocalDate.now();
+	}
+
 	public static final double PRECIO_MAX = 100; // límite máximo del precio
 
 	// ==============================
@@ -62,9 +66,9 @@ public class PrecioCombustible {
 		if (fecha == null) {
 			throw new IllegalArgumentException("La fecha no puede ser nula");
 		}
-		if (fecha.isBefore(FECHA_MIN) || fecha.isAfter(FECHA_MAX)) {
+		if (fecha.isBefore(FECHA_MIN) || fecha.isAfter(FECHA_MAX())) {
 			throw new IllegalArgumentException(
-					"La fecha debe estar entre " + FECHA_MIN + " y " + FECHA_MAX);
+					"La fecha debe estar entre " + FECHA_MIN + " y " + FECHA_MAX());
 		}
 		this.fecha = fecha;
 	}
